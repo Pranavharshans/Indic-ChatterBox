@@ -82,7 +82,23 @@ python IndicFinetuning/prepare_hf_dataset.py \
   --output ./IndicFinetuning/datasets/MalayalamDataset \
   --audio-column audio \
   --text-column text \
-  --default-language ml
+  --default-language ml \
+  --min-duration 1.0 \
+  --max-duration 15.0
+```
+
+For `Praha-Labs/TTS-ML`, use:
+
+```bash
+python IndicFinetuning/prepare_hf_dataset.py \
+  --dataset Praha-Labs/TTS-ML \
+  --split train \
+  --output ./IndicFinetuning/datasets/MalayalamDataset \
+  --audio-column audio \
+  --text-column text \
+  --default-language ml \
+  --min-duration 1.0 \
+  --max-duration 15.0
 ```
 
 For a multilingual HF dataset with a language column:

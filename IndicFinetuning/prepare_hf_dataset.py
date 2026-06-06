@@ -54,6 +54,8 @@ def main():
     parser.add_argument("--id-column", default=None)
     parser.add_argument("--language-filter", default=None, help="Only export rows matching this language code.")
     parser.add_argument("--max-samples", type=int, default=None)
+    parser.add_argument("--min-duration", type=float, default=1.0, help="Skip clips shorter than this many seconds.")
+    parser.add_argument("--max-duration", type=float, default=15.0, help="Skip clips longer than this many seconds.")
     parser.add_argument("--unicode-form", default="NFC")
     parser.add_argument("--trust-remote-code", action="store_true")
     args = parser.parse_args()
@@ -100,6 +102,10 @@ def main():
                 audio_array = np.asarray(audio_array, dtype=np.float32)
                 if audio_array.ndim > 2:
                     raise ValueError(f"Audio has unsupported shape: {audio_array.shape}")
+                duration = audio_array.shape[0] / sampling_rate
+                if duration < args.min_duration or duration > args.max_duration:
+                    skipped += 1
+                    continue
                 sf.write(str(wav_path), audio_array, sampling_rate)
             except Exception as exc:
                 skipped += 1
@@ -119,4 +125,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
