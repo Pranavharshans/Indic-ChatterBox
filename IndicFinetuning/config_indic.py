@@ -14,6 +14,7 @@ class IndicTrainConfig:
     wav_dir: str = "./IndicFinetuning/datasets/MalayalamDataset/wavs"
     preprocessed_dir: str = "./IndicFinetuning/datasets/MalayalamDataset/preprocess"
     output_dir: str = "./IndicFinetuning/outputs"
+    tokenizer_path: str = "./IndicFinetuning/tokenizer/tokenizer_indic.json"
 
     # Model selection.
     is_turbo: bool = False
