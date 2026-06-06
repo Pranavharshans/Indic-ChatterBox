@@ -1,5 +1,9 @@
 ***
 
+# Indic-ChatterBox
+
+This fork adds a separate `IndicFinetuning/` workflow for Malayalam and other Indic-language fine-tuning while keeping the upstream Chatterbox training kit intact. See [IndicFinetuning/README.md](IndicFinetuning/README.md).
+
 # Chatterbox: Fine-Tuning & LoRA Inference Kit 🎙️
 
 A modular, highly efficient infrastructure for **fine-tuning** both **Chatterbox TTS (Standart)** and **Chatterbox Turbo** models with your own dataset and generating high-quality speech synthesis.
