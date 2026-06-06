@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, Iterable, List
+from unicodedata import category
 
 
 COMMON_PUNCTUATION = list(" .,!?;:'\"-()[]/")
@@ -23,6 +24,8 @@ class IndicLanguage:
         for block in self.unicode_blocks:
             for codepoint in block:
                 char = chr(codepoint)
+                if category(char) in {"Cc", "Cn"}:
+                    continue
                 if char not in seen:
                     chars.append(char)
                     seen.add(char)
@@ -80,4 +83,3 @@ def get_graphemes(codes: Iterable[str], include_common_punctuation: bool = True)
 
 def list_supported_languages() -> Dict[str, str]:
     return {code: language.name for code, language in INDIC_LANGUAGES.items()}
-
