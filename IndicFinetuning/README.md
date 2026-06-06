@@ -71,6 +71,33 @@ IndicFinetuning/datasets/MalayalamDataset/metadata.csv
 IndicFinetuning/datasets/MalayalamDataset/wavs/
 ```
 
+If your data is on Hugging Face, convert it first:
+
+```bash
+pip install datasets
+
+python IndicFinetuning/prepare_hf_dataset.py \
+  --dataset your-user/your-malayalam-dataset \
+  --split train \
+  --output ./IndicFinetuning/datasets/MalayalamDataset \
+  --audio-column audio \
+  --text-column text \
+  --default-language ml
+```
+
+For a multilingual HF dataset with a language column:
+
+```bash
+python IndicFinetuning/prepare_hf_dataset.py \
+  --dataset your-user/your-indic-dataset \
+  --split train \
+  --output ./IndicFinetuning/datasets/MalayalamDataset \
+  --audio-column audio \
+  --text-column text \
+  --language-column language_id \
+  --default-language ml
+```
+
 5. Audit tokenizer coverage:
 
 ```bash
@@ -122,4 +149,3 @@ python IndicFinetuning/tokenizer/build_indic_tokenizer.py --languages ml ta te k
 ```
 
 Every metadata row should include the correct language code.
-
