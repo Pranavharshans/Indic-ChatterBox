@@ -20,6 +20,12 @@ from .models.t3.modules.cond_enc import T3Cond
 
 REPO_ID = "ResembleAI/chatterbox"
 
+
+def get_watermarker():
+    watermarker_cls = getattr(perth, "PerthImplicitWatermarker", None)
+    return watermarker_cls() if callable(watermarker_cls) else None
+
+
 # Supported languages for the multilingual model
 SUPPORTED_LANGUAGES = {
   "ar": "Arabic",
@@ -150,7 +156,7 @@ class ChatterboxMultilingualTTS:
         self.tokenizer = tokenizer
         self.device = device
         self.conds = conds
-        self.watermarker = perth.PerthImplicitWatermarker()
+        self.watermarker = get_watermarker()
 
     @classmethod
     def get_supported_languages(cls):
@@ -297,5 +303,5 @@ class ChatterboxMultilingualTTS:
                 ref_dict=self.conds.gen,
             )
             wav = wav.squeeze(0).detach().cpu().numpy()
-            watermarked_wav = self.watermarker.apply_watermark(wav, sample_rate=self.sr)
+            watermarked_wav = self.watermarker.apply_watermark(wav, sample_rate=self.sr) if self.watermarker else wav
         return torch.from_numpy(watermarked_wav).unsqueeze(0)

@@ -26,6 +26,11 @@ logger = logging.getLogger(__name__)
 REPO_ID = "ResembleAI/chatterbox-turbo"
 
 
+def get_watermarker():
+    watermarker_cls = getattr(perth, "PerthImplicitWatermarker", None)
+    return watermarker_cls() if callable(watermarker_cls) else None
+
+
 def punc_norm(text: str) -> str:
     """
         Quick cleanup func for punctuation from LLMs or
@@ -127,7 +132,7 @@ class ChatterboxTurboTTS:
         self.tokenizer = tokenizer
         self.device = device
         self.conds = conds
-        self.watermarker = perth.PerthImplicitWatermarker()
+        self.watermarker = get_watermarker()
 
     @classmethod
     def from_local(cls, ckpt_dir, device) -> 'ChatterboxTurboTTS':
@@ -295,5 +300,5 @@ class ChatterboxTurboTTS:
             n_cfm_timesteps=2,
         )
         wav = wav.squeeze(0).detach().cpu().numpy()
-        watermarked_wav = self.watermarker.apply_watermark(wav, sample_rate=self.sr)
+        watermarked_wav = self.watermarker.apply_watermark(wav, sample_rate=self.sr) if self.watermarker else wav
         return torch.from_numpy(watermarked_wav).unsqueeze(0)

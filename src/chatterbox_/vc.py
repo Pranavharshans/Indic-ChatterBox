@@ -13,6 +13,11 @@ from .models.s3gen import S3GEN_SR, S3Gen
 REPO_ID = "ResembleAI/chatterbox"
 
 
+def get_watermarker():
+    watermarker_cls = getattr(perth, "PerthImplicitWatermarker", None)
+    return watermarker_cls() if callable(watermarker_cls) else None
+
+
 class ChatterboxVC:
     ENC_COND_LEN = 6 * S3_SR
     DEC_COND_LEN = 10 * S3GEN_SR
@@ -26,7 +31,7 @@ class ChatterboxVC:
         self.sr = S3GEN_SR
         self.s3gen = s3gen
         self.device = device
-        self.watermarker = perth.PerthImplicitWatermarker()
+        self.watermarker = get_watermarker()
         if ref_dict is None:
             self.ref_dict = None
         else:
@@ -100,5 +105,5 @@ class ChatterboxVC:
                 ref_dict=self.ref_dict,
             )
             wav = wav.squeeze(0).detach().cpu().numpy()
-            watermarked_wav = self.watermarker.apply_watermark(wav, sample_rate=self.sr)
+            watermarked_wav = self.watermarker.apply_watermark(wav, sample_rate=self.sr) if self.watermarker else wav
         return torch.from_numpy(watermarked_wav).unsqueeze(0)
