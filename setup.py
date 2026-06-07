@@ -4,6 +4,7 @@ import sys
 import json
 from tqdm import tqdm
 from transformers import AutoTokenizer
+from safetensors import safe_open
 from src.config import TrainConfig
 
 
@@ -35,10 +36,14 @@ def download_file(url, dest_path):
     """Downloads a file from a URL to a specific destination with a progress bar."""
     
     if os.path.exists(dest_path):
-        print(f"File already exists: {dest_path}")
-        return
+        if is_existing_file_valid(dest_path):
+            print(f"File already exists: {dest_path}")
+            return
+        print(f"Existing file is invalid, redownloading: {dest_path}")
+        os.remove(dest_path)
 
     print(f"Downloading: {os.path.basename(dest_path)}...")
+    temp_path = f"{dest_path}.part"
     
     try:
         
@@ -48,7 +53,7 @@ def download_file(url, dest_path):
         total_size = int(response.headers.get('content-length', 0))
         block_size = 1024
         
-        with open(dest_path, 'wb') as file, tqdm(
+        with open(temp_path, 'wb') as file, tqdm(
             desc=os.path.basename(dest_path),
             total=total_size,
             unit='iB',
@@ -60,13 +65,30 @@ def download_file(url, dest_path):
                 
                 size = file.write(data)
                 bar.update(size)
+
+        os.replace(temp_path, dest_path)
                 
         print(f"Download complete: {dest_path}\n")
         
         
     except requests.exceptions.RequestException as e:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
         print(f"Error downloading {url}: {e}")
         sys.exit(1)
+
+
+def is_existing_file_valid(path):
+    if os.path.getsize(path) == 0:
+        return False
+    if path.endswith(".safetensors"):
+        try:
+            with safe_open(path, framework="pt", device="cpu") as handle:
+                handle.keys()
+            return True
+        except Exception:
+            return False
+    return True
 
 
 
