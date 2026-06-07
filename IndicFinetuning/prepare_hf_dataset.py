@@ -1,5 +1,6 @@
 import argparse
 import csv
+from io import BytesIO
 from pathlib import Path
 import sys
 from typing import Any, Optional
@@ -31,6 +32,10 @@ def get_audio_array_and_sr(audio_value):
         array = audio_value.get("array")
         sampling_rate = audio_value.get("sampling_rate")
         if array is not None and sampling_rate is not None:
+            return np.asarray(array), int(sampling_rate)
+        audio_bytes = audio_value.get("bytes")
+        if audio_bytes:
+            array, sampling_rate = sf.read(BytesIO(audio_bytes), always_2d=False)
             return np.asarray(array), int(sampling_rate)
         path = audio_value.get("path")
         if path:
@@ -74,7 +79,7 @@ def main():
 
     dataset = load_dataset(args.dataset, split=args.split, trust_remote_code=args.trust_remote_code)
     if args.audio_column in dataset.column_names:
-        dataset = dataset.cast_column(args.audio_column, Audio(decode=True))
+        dataset = dataset.cast_column(args.audio_column, Audio(decode=False))
 
     exported = 0
     skipped = 0
