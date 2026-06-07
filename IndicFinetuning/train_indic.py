@@ -1,9 +1,14 @@
 import os
 import sys
+from pathlib import Path
 
 import torch
 from safetensors.torch import save_file
 from transformers import Trainer, TrainingArguments
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from IndicFinetuning.config_indic import IndicTrainConfig
 from IndicFinetuning.indic_engine import attach_indic_tokenizer, get_engine_class, tokenizer_vocab_size
@@ -135,4 +140,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

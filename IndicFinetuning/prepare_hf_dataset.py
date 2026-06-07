@@ -1,11 +1,16 @@
 import argparse
 import csv
 from pathlib import Path
+import sys
 from typing import Any, Optional
 
 import numpy as np
 import soundfile as sf
 from tqdm import tqdm
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from IndicFinetuning.indic_text import normalize_indic_text, resolve_language
 
