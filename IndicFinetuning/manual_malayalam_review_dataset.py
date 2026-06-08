@@ -28,6 +28,26 @@ STYLE_BY_CATEGORY = {
 }
 
 
+def row(
+    row_id: str,
+    category: str,
+    gender: str,
+    voice: str,
+    emotion_type: str,
+    tag: str,
+    text: str,
+) -> Dict[str, str]:
+    return {
+        "id": row_id,
+        "category": category,
+        "gender": gender,
+        "voice": voice,
+        "emotion_type": emotion_type,
+        "tag": tag,
+        "text": text,
+    }
+
+
 MANUAL_ROWS: List[Dict[str, str]] = [
     {
         "id": "manual_0001_conversation_female",
@@ -938,6 +958,112 @@ MANUAL_ROWS.extend(
 )
 
 
+MANUAL_ROWS.extend(
+    [
+        row("manual_0101_conversation_female", "conversation", "female", "Callirrhoe", "", "", "ക്ഷേത്രോത്സവത്തിന് പോയപ്പോൾ മേളത്തിന്റെ ശബ്ദം അകലെ നിന്നുതന്നെ കേട്ടു. തിരക്കിനിടയിൽ അമ്മയുടെ കൈ പിടിച്ചാണ് ഞാൻ മുന്നോട്ട് നടന്നത്."),
+        row("manual_0102_conversation_male", "conversation", "male", "Puck", "", "", "ജിമ്മിൽ ട്രെഡ്മില്ലിന്റെ വേഗം കുറയ്ക്കാൻ മറന്നതുകൊണ്ട് ഞാൻ കുറച്ച് നിമിഷം ഓട്ടക്കാരനായി. പിന്നെ ബട്ടൺ കണ്ടപ്പോൾ മാത്രമാണ് ശ്വാസം പിടിച്ചത്."),
+        row("manual_0103_conversation_female", "conversation", "female", "Aoede", "", "", "ബാങ്കിലെ ലോക്കർ തുറക്കാൻ അമ്മ ഒപ്പിടുമ്പോൾ കൈ അല്പം വിറച്ചു. പഴയ ആഭരണങ്ങൾ കണ്ടതോടെ അവളുടെ മുഖം മൃദുവായി."),
+        row("manual_0104_conversation_male", "conversation", "male", "Charon", "", "", "പാർക്കിലെ തടാകത്തിന് ചുറ്റും നടക്കുമ്പോൾ ഒരു മുതിർന്ന ആളു ദിവസവും വരുന്ന പക്ഷികളെക്കുറിച്ച് പറഞ്ഞു. പേരറിയാത്ത പക്ഷികൾക്കും അവനോട് പരിചയം പോലെ തോന്നി."),
+        row("manual_0105_conversation_female", "conversation", "female", "Kore", "", "", "സ്കൂൾ ഗേറ്റിന് മുന്നിൽ കുട്ടികൾ ഇറങ്ങുന്ന സമയം വലിയ തിരക്കായിരുന്നു. ഒരു ചെറിയ കുട്ടി ബോട്ടിൽ മറന്നതോടെ അമ്മ വീണ്ടും ഓടി വന്നു."),
+        row("manual_0106_conversation_male", "conversation", "male", "Fenrir", "", "", "ആശുപത്രിയിലെ ഫാർമസിയിൽ മരുന്ന് കിട്ടാൻ കാത്തിരുന്നപ്പോൾ എന്റെ നമ്പർ വിളിച്ചത് കേൾക്കാതെ പോയി. പിന്നിലെ ആളാണ് ശാന്തമായി ഓർമ്മിപ്പിച്ചത്."),
+        row("manual_0107_conversation_female", "conversation", "female", "Despina", "", "", "വിമാനത്താവളത്തിൽ ആദ്യമായി ഒറ്റയ്ക്ക് ചെക്കിൻ ചെയ്യുമ്പോൾ അല്പം ഭയം ഉണ്ടായിരുന്നു. ബാഗ് ബെൽറ്റിലൂടെ പോയതോടെ പകുതി ആശങ്ക മാറി."),
+        row("manual_0108_conversation_male", "conversation", "male", "Orus", "", "", "പോലീസ് സ്റ്റേഷനിൽ സർട്ടിഫിക്കറ്റ് ചോദിക്കാൻ പോയപ്പോൾ ആദ്യം എനിക്ക് പേടി തോന്നി. ഡെസ്കിലുള്ള ഉദ്യോഗസ്ഥൻ സാധാരണ പോലെ ചോദ്യം ചെയ്തതോടെ മനസ്സ് ലഘുവായി."),
+        row("manual_0109_conversation_female", "conversation", "female", "Laomedeia", "", "", "ബസ് ഡിപ്പോയിൽ അവസാന ബസ് ഏത് പ്ലാറ്റ്ഫോമിൽ നിന്നാണെന്ന് ആരും ഉറപ്പായി പറയുന്നില്ലായിരുന്നു. ഒടുവിൽ ചായക്കടക്കാരനാണ് ശരിയായ വിവരം പറഞ്ഞത്."),
+        row("manual_0110_conversation_male", "conversation", "male", "Iapetus", "", "", "മൊബൈൽ റിപെയർ കടയിൽ എന്റെ ഫോൺ തുറന്നപ്പോൾ ചെറിയ സ്ക്രൂകൾ എല്ലാം നിരത്തി വെച്ചു. അത്ര ചെറുതായ ഭാഗങ്ങൾ കണ്ടപ്പോൾ തന്നെ അത്ഭുതപ്പെട്ടു."),
+        row("manual_0111_conversation_female", "conversation", "female", "Leda", "", "", "പൂക്കടയിൽ രാവിലെ ജാസ്മിൻ മാലകൾ കെട്ടിവെച്ചിരുന്നു. കടക്കാരി സംസാരിക്കുമ്പോഴും അവളുടെ വിരലുകൾ നിർത്താതെ ജോലി ചെയ്തു."),
+        row("manual_0112_conversation_male", "conversation", "male", "Algenib", "", "", "ഓഫീസിലെ പ്രിന്റർ പേപ്പർ കുടുങ്ങിയപ്പോൾ എല്ലാവരും എന്നെയാണ് നോക്കിയത്. ഞാൻ ഒന്നും അറിയാത്തവനെ പോലെ മൂടി തുറന്ന് നിന്നു."),
+        row("manual_0113_conversation_female", "conversation", "female", "Callirrhoe", "", "", "സംഗീത ക്ലാസിലെ കുട്ടി ആദ്യമായി ശരിയായ താളത്തിൽ പാടി. അമ്മ പുറത്തുനിന്ന് കേട്ടുകൊണ്ട് കണ്ണുകൊണ്ട് മാത്രം അഭിനന്ദിച്ചു."),
+        row("manual_0114_conversation_male", "conversation", "male", "Puck", "", "", "ബാർബർ ഷോപ്പിൽ കാത്തിരിക്കുമ്പോൾ മുന്നിലെ ആളിന്റെ മുടി വളരെ കുറയുന്നത് കണ്ടു. എന്റെ തവണ വന്നപ്പോൾ ഞാൻ കൃത്യമായി നീളം പറഞ്ഞു."),
+        row("manual_0115_conversation_female", "conversation", "female", "Aoede", "", "", "അടുക്കള ഗ്യാസ് തീർന്നത് കറി പാകം പകുതിയിൽ നിൽക്കുമ്പോഴാണ്. അടുത്ത വീട്ടിൽ നിന്ന് ഇൻഡക്ഷൻ സ്റ്റൗവ് കിട്ടിയത് വലിയ സഹായമായി."),
+        row("manual_0116_conversation_male", "conversation", "male", "Charon", "", "", "തൊഴിൽ മേളയിൽ എന്റെ ബയോഡാറ്റ കൈയിൽ പിടിച്ച് ഏറെ നേരം നടന്നു. ഒരു കമ്പനിയുടെ മേശയിൽ സംസാരിക്കാൻ തുടങ്ങിയപ്പോൾ ആത്മവിശ്വാസം തിരികെ വന്നു."),
+        row("manual_0117_conversation_female", "conversation", "female", "Kore", "", "", "മ്യൂസിയത്തിൽ പഴയ നാണയങ്ങൾ നോക്കുമ്പോൾ അച്ഛൻ തന്റെ ബാല്യകാലത്തെ പൈസകളെക്കുറിച്ച് പറഞ്ഞു. ചരിത്രം പെട്ടെന്ന് വീട്ടുകഥയായി മാറി."),
+        row("manual_0118_conversation_male", "conversation", "male", "Fenrir", "", "", "ക്രിക്കറ്റ് നെറ്റിൽ ബാറ്റ് പിടിച്ച് നിന്നപ്പോൾ ആദ്യ പന്ത് തന്നെ പാഡിൽ തട്ടി. കോച്ച് ചിരിച്ചില്ല, അതുകൊണ്ട് വീണ്ടും ശ്രമിക്കാൻ ധൈര്യം കിട്ടി."),
+        row("manual_0119_conversation_female", "conversation", "female", "Despina", "", "", "പുതിയ കണ്ണാടി വാങ്ങാൻ കടയിൽ പോയപ്പോൾ ഏത് ഫ്രെയിം ചേരുമെന്ന് തീരുമാനിക്കാൻ ബുദ്ധിമുട്ടായി. കടക്കാരൻ പഴയ ഫോട്ടോ നോക്കി നിറം നിർദ്ദേശിച്ചു."),
+        row("manual_0120_conversation_male", "conversation", "male", "Orus", "", "", "റെയിൽവേ ബുക്കിംഗ് കൗണ്ടറിൽ പഴയ രീതിയിലുള്ള ഫോം പൂരിപ്പിക്കേണ്ടി വന്നു. മൊബൈൽ ആപ്പിനെക്കാൾ പേപ്പർ കൂടുതൽ ക്ഷമ ചോദിച്ചു."),
+        row("manual_0121_conversation_female", "conversation", "female", "Laomedeia", "", "", "കുടുംബയോഗത്തിൽ എല്ലാവരും സംസാരിക്കുമ്പോൾ ചെറിയ കസേരകൾ പോലും കുറവായി. കുട്ടികൾ നിലത്ത് ഇരുന്നത് കൊണ്ടാണ് മുതിർന്നവർക്ക് സ്ഥലം കിട്ടിയത്."),
+        row("manual_0122_conversation_male", "conversation", "male", "Iapetus", "", "", "സൈക്കിൾ പഞ്ചർ ഒട്ടിക്കാൻ കടയിൽ നിന്നപ്പോൾ ചെറുപ്പക്കാരൻ വളരെ നൈപുണ്യത്തോടെ ട്യൂബ് വെള്ളത്തിൽ മുക്കി നോക്കി. കുഴി കണ്ടെത്തിയ നിമിഷം അവന് സന്തോഷം."),
+        row("manual_0123_conversation_female", "conversation", "female", "Leda", "", "", "കോട്ടൺ സാരി വാങ്ങാൻ പോയപ്പോൾ നിറങ്ങൾ എല്ലാം ഒരുപോലെ മനോഹരമായി തോന്നി. അവസാനം അമ്മമ്മയ്ക്ക് ഇഷ്ടമുള്ള പച്ചയാണ് ഞാൻ എടുത്തത്."),
+        row("manual_0124_conversation_male", "conversation", "male", "Algenib", "", "", "ചെറിയ ഹോട്ടലിൽ ഉച്ചയ്ക്ക് കയറിയപ്പോൾ മെനു ബോർഡിൽ പകുതി വിഭവങ്ങൾ മായ്ച്ചിരുന്നു. ബാക്കിയുണ്ടായിരുന്ന മീൽസാണ് ഏറ്റവും നല്ല തിരഞ്ഞെടുപ്പ് ആയി."),
+        row("manual_0125_conversation_female", "conversation", "female", "Callirrhoe", "", "", "പെൻഷൻ ഓഫീസിൽ അമ്മമ്മയുടെ ഒപ്പ് എടുക്കാൻ പോയപ്പോൾ അവൾ പഴയ ബാഗിൽ എല്ലാം കൃത്യമായി വെച്ചിരുന്നു. ഞാൻ സഹായിക്കാൻ പോയതാണെങ്കിലും അവളാണ് എന്നെ നയിച്ചത്."),
+        row("manual_0126_conversation_male", "conversation", "male", "Puck", "", "", "ബീച്ചിൽ ചെരിപ്പ് മണലിൽ കുഴിഞ്ഞുപോയി. തിരിച്ചു പോകുമ്പോൾ ഒരുകൈയിൽ ചെരിപ്പും മറ്റേകൈയിൽ ചൂടൻ കടലയും പിടിച്ചാണ് നടന്നത്."),
+        row("manual_0127_conversation_female", "conversation", "female", "Aoede", "", "", "പോസ്റ്റ് ഓഫീസിൽ പാർസൽ അയക്കാൻ പേപ്പർ ഒട്ടിക്കുമ്പോൾ ഗ്ലൂ കൈയിൽ പിടിച്ചു. ജീവനക്കാരി ചിരിച്ച് ടിഷ്യു കൊടുത്തതോടെ കാര്യങ്ങൾ തീർന്നു."),
+        row("manual_0128_conversation_male", "conversation", "male", "Charon", "", "", "തിയേറ്ററിന്റെ പുറത്തു മഴ തുടങ്ങി, എല്ലാവരും ടിക്കറ്റ് പിടിച്ച് മേൽക്കൂരയുടെ അടിയിൽ കൂടി. സിനിമ തുടങ്ങുന്നതിന് മുമ്പേ ഒരു ചെറിയ കൂട്ടായ്മ ഉണ്ടായി."),
+        row("manual_0129_conversation_female", "conversation", "female", "Kore", "", "", "വീട്ടിലെ വാഷിംഗ് മെഷീൻ നടുവിൽ നിർത്തിയപ്പോൾ വസ്ത്രങ്ങൾ സോപ്പോടെ തന്നെ കിടന്നു. കൈകൊണ്ട് കഴുകിയതോടെ പഴയ ദിവസങ്ങൾ ഓർമ്മ വന്നു."),
+        row("manual_0130_conversation_male", "conversation", "male", "Fenrir", "", "", "പെട്രോൾ പമ്പിൽ കാർഡ് മെഷീൻ പ്രവർത്തിക്കാതെ നിന്നപ്പോൾ പിന്നിലെ കാറുകൾ നിരയായി. കാഷ് കൈയിൽ ഉണ്ടായത് അന്നേ ദിവസം ഭാഗ്യമായി."),
+        row("manual_0131_conversation_female", "conversation", "female", "Despina", "", "", "നെയ്ത്ത് പഠിക്കുന്ന ക്ലാസിൽ എന്റെ നൂൽ ഇടയ്ക്കിടെ കുരുങ്ങി. അടുത്തിരുന്ന സ്ത്രീ വാക്കൊന്നുമില്ലാതെ കൈപിടിച്ച് കാണിച്ചു തന്നു."),
+        row("manual_0132_conversation_male", "conversation", "male", "Orus", "", "", "മുനിസിപ്പാലിറ്റി ഓഫീസിൽ വെള്ളക്കരം അടയ്ക്കാൻ പോയപ്പോൾ പഴയ രസീത് ചോദിച്ചു. വീട്ടിൽ സൂക്ഷിച്ച ഫയലിന്റെ വില അപ്പോൾ മനസ്സിലായി."),
+        row("manual_0133_conversation_female", "conversation", "female", "Laomedeia", "", "", "കുഞ്ഞിന്റെ വാക്സിൻ ദിവസം അവൾ കരയുമോ എന്ന് ഞാൻ ഭയപ്പെട്ടു. സൂചി കഴിഞ്ഞപ്പോൾ അവൾ സ്റ്റിക്കർ നോക്കി ശാന്തമായി."),
+        row("manual_0134_conversation_male", "conversation", "male", "Iapetus", "", "", "വൈകുന്നേരത്തെ യോഗ ക്ലാസിൽ ശ്വാസം എണ്ണാൻ പറഞ്ഞു. ഞാൻ എണ്ണത്തിൽ കുഴഞ്ഞെങ്കിലും മുറിയിലെ നിശ്ശബ്ദത മനസ്സിന് നല്ലതായിരുന്നു."),
+        row("manual_0135_conversation_female", "conversation", "female", "Leda", "", "", "പഴയ വാടകവീടിന്റെ മുന്നിലൂടെ പോയപ്പോൾ ജനലിന്റെ നിറം മാറിയിരുന്നു. എന്നാലും പടിക്കൽ നിന്നിരുന്ന നിഴൽ പഴയപോലെ തോന്നി."),
+        row("manual_0136_conversation_male", "conversation", "male", "Algenib", "", "", "കമ്പ്യൂട്ടർ സെന്ററിൽ ഫോട്ടോ പ്രിന്റ് എടുക്കാൻ പോയപ്പോൾ നിറം അല്പം മാറി. കടക്കാരൻ വീണ്ടും സെറ്റിംഗ് ശരിയാക്കി ക്ഷമയോടെ കൊടുത്തു."),
+        row("manual_0137_conversation_female", "conversation", "female", "Callirrhoe", "", "", "അരി കഴുകുമ്പോൾ കൈയിൽ നിന്ന് പാത്രം വഴുതി വെള്ളം മുഴുവൻ നിലത്ത് വീണു. അമ്മ ഒന്നും പറയാതെ തുടയ്ക്കാനുള്ള തുണി നീട്ടി."),
+        row("manual_0138_conversation_male", "conversation", "male", "Puck", "", "", "പഴയ റേഡിയോ നന്നാക്കാൻ ശ്രമിച്ചപ്പോൾ അകത്ത് പൊടി മാത്രമാണ് ആദ്യം കിട്ടിയത്. ഒടുവിൽ ചെറിയ ശബ്ദം വന്നപ്പോൾ വലിയ വിജയം പോലെ തോന്നി."),
+        row("manual_0139_conversation_female", "conversation", "female", "Aoede", "", "", "കോളേജ് കാന്റീനിലെ സമോസ പഴയ രുചിയിലല്ലെന്ന് എല്ലാവരും പറഞ്ഞു. എങ്കിലും പരീക്ഷയ്ക്ക് മുമ്പുള്ള ആ തിരക്ക് മാത്രം മാറിയില്ല."),
+        row("manual_0140_conversation_male", "conversation", "male", "Charon", "", "", "കോടതിക്കു സമീപമുള്ള ടൈപ്പിംഗ് കടയിൽ ആളുകൾ രേഖകളുമായി കാത്തിരുന്നു. ഒരേ സമയം ഉത്കണ്ഠയും പ്രതീക്ഷയും അവിടെയുണ്ടായിരുന്നു."),
+        row("manual_0141_conversation_female", "conversation", "female", "Kore", "", "", "വധുവിന്റെ വീട്ടിൽ മേക്കപ്പ് നടക്കുമ്പോൾ മുറി മുഴുവൻ പിനുകളും പൂക്കളും നിറഞ്ഞിരുന്നു. അവൾ ശാന്തമായി കണ്ണാടി മാത്രം നോക്കി."),
+        row("manual_0142_conversation_male", "conversation", "male", "Fenrir", "", "", "റോഡ് പണി കാരണം ബൈക്ക് മറ്റൊരു വഴിയിലൂടെ കൊണ്ടുപോയി. പരിചയമില്ലാത്ത ഗല്ലിയിൽ പഴയ പുസ്തകക്കട കണ്ടത് നല്ല കണ്ടെത്തലായി."),
+        row("manual_0143_conversation_female", "conversation", "female", "Despina", "", "", "ഇന്ന് ഓഫീസ് കാന്റീനിൽ പുതിയ ആളുമായി മേശ പങ്കിട്ടു. ആദ്യം മിണ്ടാതിരുന്നെങ്കിലും ചോറിന്റെ കറിയെക്കുറിച്ച് സംസാരിച്ചപ്പോൾ പരിചയം തുടങ്ങി."),
+        row("manual_0144_conversation_male", "conversation", "male", "Orus", "", "", "വീട്ടിലെ പഴയ ഘടികാരം നിർത്തിയിരുന്നു. ബാറ്ററി മാറ്റിയപ്പോൾ ടിക്ക് ടിക്ക് ശബ്ദം മുറിയിലേക്ക് തിരികെ വന്നു."),
+        row("manual_0145_conversation_female", "conversation", "female", "Laomedeia", "", "", "കൃഷിത്തോട്ടത്തിൽ മുളക് പറിക്കുമ്പോൾ കൈ ചൂടായി. അമ്മമ്മ എണ്ണ തേച്ചാൽ കുറയും എന്ന് പറഞ്ഞു, അതും ശരിയായി."),
+        row("manual_0146_conversation_male", "conversation", "male", "Iapetus", "", "", "മത്സരത്തിനായി ഹാളിൽ കയറിയപ്പോൾ മൈക്ക് പരീക്ഷിക്കുന്ന ശബ്ദം കേട്ടു. എന്റെ പേര് വിളിക്കുമ്പോൾ പേടി ഉണ്ടായിരുന്നു, പക്ഷേ കാലുകൾ മുന്നോട്ട് പോയി."),
+        row("manual_0147_conversation_female", "conversation", "female", "Leda", "", "", "മൊബൈൽ ഗാലറിയിലെ പഴയ വീഡിയോയിൽ സഹോദരൻ ചെറുപ്പത്തിൽ പാടുന്നത് കണ്ടു. അവൻ തന്നെ അത് കണ്ടു നാണിച്ച് മുറി വിട്ടു."),
+        row("manual_0148_conversation_male", "conversation", "male", "Algenib", "", "", "വീട്ടിനടുത്തുള്ള പാലം പുനർനിർമ്മിച്ച ശേഷം ആദ്യമായി അതിലൂടെ നടന്നു. പഴയ വഴി മാറിയെങ്കിലും കാറ്റ് അതേപോലെ തന്നെയായിരുന്നു."),
+        row("manual_0149_conversation_female", "conversation", "female", "Callirrhoe", "", "", "സ്കാൻ സെന്ററിൽ റിപ്പോർട്ട് കാത്തിരിക്കുമ്പോൾ മിനിറ്റുകൾ നീളമുള്ളതായി തോന്നി. പേര് വിളിച്ചപ്പോൾ എല്ലാവരും ഒരുമിച്ച് തല തിരിച്ചു."),
+        row("manual_0150_conversation_male", "conversation", "male", "Puck", "", "", "രാത്രി കട അടയ്ക്കാൻ പോകുമ്പോൾ അവസാന ഉപഭോക്താവ് പാൽ ചോദിച്ചു. ഫ്രിഡ്ജിൽ ഒന്ന് മാത്രം ബാക്കിയുണ്ടായിരുന്നത് അവന് ഭാഗ്യം."),
+        row("manual_0151_neutral_female", "neutral_replay", "female", "Aoede", "", "", "ക്ഷേത്രോത്സവ സമയത്ത് പ്രധാന റോഡിൽ വാഹനങ്ങൾ പ്രവേശിക്കില്ല. പാർക്കിംഗ് സ്കൂൾ മൈതാനത്താണ് ക്രമീകരിച്ചിരിക്കുന്നത്."),
+        row("manual_0152_neutral_male", "neutral_replay", "male", "Charon", "", "", "ജിം അംഗത്വം പുതുക്കാൻ പഴയ രസീത് ആവശ്യമില്ല. മൊബൈൽ നമ്പർ പറഞ്ഞാൽ വിവരങ്ങൾ കണ്ടെത്താം."),
+        row("manual_0153_neutral_female", "neutral_replay", "female", "Kore", "", "", "ബാങ്കിലെ ലോക്കർ വിഭാഗം ഉച്ചയ്ക്ക് ഒരു മണിക്ക് അടയ്ക്കും. അതിന് മുമ്പ് ടോക്കൺ എടുത്ത് കാത്തിരിക്കുക."),
+        row("manual_0154_neutral_male", "neutral_replay", "male", "Fenrir", "", "", "പാർക്കിൽ നായയെ കൊണ്ടുവരുമ്പോൾ ബെൽറ്റ് നിർബന്ധമാണ്. കുട്ടികളുടെ കളിസ്ഥലത്തിന് സമീപം ഭക്ഷണം വലിച്ചെറിയരുത്."),
+        row("manual_0155_neutral_female", "neutral_replay", "female", "Despina", "", "", "സ്കൂൾ പ്രോജക്റ്റ് വെള്ളിയാഴ്ചയ്ക്കകം സമർപ്പിക്കണം. കുട്ടിയുടെ പേര് ഓരോ മോഡലിലും വ്യക്തമായി എഴുതുക."),
+        row("manual_0156_neutral_male", "neutral_replay", "male", "Orus", "", "", "ആശുപത്രി ഫാർമസിയിൽ ബിൽ അടച്ച ശേഷം മാത്രമേ മരുന്ന് ലഭിക്കൂ. സംശയമുള്ള ഡോസേജ് ഡോക്ടറോട് വീണ്ടും ചോദിക്കുക."),
+        row("manual_0157_neutral_female", "neutral_replay", "female", "Laomedeia", "", "", "വിമാനയാത്രയ്ക്ക് രണ്ട് മണിക്കൂർ മുമ്പ് എത്തുന്നത് നല്ലതാണ്. തിരിച്ചറിയൽ രേഖ എളുപ്പത്തിൽ കാണാവുന്നിടത്ത് വെക്കുക."),
+        row("manual_0158_neutral_male", "neutral_replay", "male", "Iapetus", "", "", "പോലീസ് സർട്ടിഫിക്കറ്റിന് അപേക്ഷ സമർപ്പിച്ചാൽ പരിശോധനയ്ക്ക് സമയം എടുക്കാം. രജിസ്ട്രേഷൻ നമ്പർ സൂക്ഷിച്ച് വെക്കണം."),
+        row("manual_0159_neutral_female", "neutral_replay", "female", "Leda", "", "", "ബസ് ഡിപ്പോയിലെ ടിക്കറ്റ് കൗണ്ടർ രാത്രി ഒൻപത് വരെ തുറന്നിരിക്കും. അവസാന സർവീസിന്റെ സമയം ബോർഡിൽ പരിശോധിക്കുക."),
+        row("manual_0160_neutral_male", "neutral_replay", "male", "Algenib", "", "", "മൊബൈൽ റിപെയർക്ക് നൽകുമ്പോൾ സിം കാർഡ് എടുത്തുവെക്കുക. ഡാറ്റ നഷ്ടപ്പെടാൻ സാധ്യതയുള്ളെങ്കിൽ മുമ്പ് ബാക്കപ്പ് വേണം."),
+        row("manual_0161_neutral_female", "neutral_replay", "female", "Callirrhoe", "", "", "പൂക്കടയിൽ വലിയ ഓർഡർ വേണമെങ്കിൽ ഒരു ദിവസം മുമ്പ് പറയുക. നിറം തിരഞ്ഞെടുക്കാൻ സാമ്പിൾ ചിത്രം അയക്കാം."),
+        row("manual_0162_neutral_male", "neutral_replay", "male", "Puck", "", "", "ഓഫീസ് പ്രിന്റർ ഉപയോഗിക്കുമ്പോൾ കാഗിതത്തിന്റെ വലിപ്പം ശരിയാണെന്ന് നോക്കണം. കുടുങ്ങിയ പേപ്പർ ബലമായി വലിക്കരുത്."),
+        row("manual_0163_neutral_female", "neutral_replay", "female", "Aoede", "", "", "സംഗീത ക്ലാസിൽ റെക്കോർഡിംഗ് ചെയ്യാൻ അനുമതി ചോദിക്കുക. പരിശീലനത്തിനായി മാത്രം ഉപയോഗിക്കുന്നുവെങ്കിൽ പ്രശ്നമില്ല."),
+        row("manual_0164_neutral_male", "neutral_replay", "male", "Charon", "", "", "ബാർബർ ഷോപ്പിൽ മുൻകൂട്ടി സമയം എടുത്താൽ കാത്തിരിപ്പ് കുറയും. എത്താൻ വൈകുന്നെങ്കിൽ വിളിച്ച് അറിയിക്കുക."),
+        row("manual_0165_neutral_female", "neutral_replay", "female", "Kore", "", "", "ഗ്യാസ് സിലിണ്ടർ മാറ്റുമ്പോൾ അടുപ്പ് പൂർണ്ണമായി ഓഫ് ചെയ്തിട്ടുണ്ടെന്ന് ഉറപ്പാക്കുക. മണം തോന്നിയാൽ ജനൽ തുറക്കണം."),
+        row("manual_0166_neutral_male", "neutral_replay", "male", "Fenrir", "", "", "തൊഴിൽ മേളയിൽ പങ്കെടുക്കാൻ രണ്ട് പകർപ്പ് ബയോഡാറ്റ കൊണ്ടുവരുക. ഇമെയിൽ വിലാസം വ്യക്തമായി എഴുതിയിരിക്കണം."),
+        row("manual_0167_neutral_female", "neutral_replay", "female", "Despina", "", "", "മ്യൂസിയത്തിനുള്ളിൽ ഫ്ലാഷ് ഫോട്ടോഗ്രാഫി അനുവദനീയമല്ല. പ്രദർശന വസ്തുക്കൾ കൈകൊണ്ട് തൊടരുത്."),
+        row("manual_0168_neutral_male", "neutral_replay", "male", "Orus", "", "", "ക്രിക്കറ്റ് നെറ്റിൽ ഹെൽമറ്റ് ധരിക്കാതെ ബാറ്റിംഗ് ചെയ്യരുത്. പരിശീലകൻ പറയുന്ന ക്രമത്തിൽ മാത്രം കയറുക."),
+        row("manual_0169_neutral_female", "neutral_replay", "female", "Laomedeia", "", "", "കണ്ണാടി വാങ്ങുമ്പോൾ പഴയ പ്രിസ്ക്രിപ്ഷൻ കൊണ്ടുവരണം. പുതിയ പരിശോധന വേണമെങ്കിൽ സ്റ്റോറിൽ സമയം ലഭ്യമാണ്."),
+        row("manual_0170_neutral_male", "neutral_replay", "male", "Iapetus", "", "", "റെയിൽവേ ഫോം പൂരിപ്പിക്കുമ്പോൾ യാത്ര തീയതി രണ്ട് പ്രാവശ്യം പരിശോധിക്കുക. തെറ്റുണ്ടെങ്കിൽ കൗണ്ടറിൽ തന്നെ തിരുത്തുക."),
+        row("manual_0171_neutral_female", "neutral_replay", "female", "Leda", "", "", "കുടുംബയോഗത്തിന്റെ ഭക്ഷണ പട്ടിക നാളെ അന്തിമമാക്കണം. പ്രത്യേകമായി ഒഴിവാക്കേണ്ട വിഭവങ്ങൾ ഉണ്ടെങ്കിൽ ഇന്ന് പറയുക."),
+        row("manual_0172_neutral_male", "neutral_replay", "male", "Algenib", "", "", "സൈക്കിൾ പഞ്ചർ ഒട്ടിച്ച ശേഷം പത്ത് മിനിറ്റ് കാത്തിരിക്കുക. ഉടനെ ഓടിച്ചാൽ ഒട്ടിച്ച ഭാഗം വീണ്ടും വിടാം."),
+        row("manual_0173_neutral_female", "neutral_replay", "female", "Callirrhoe", "", "", "സാരി അളവ് എടുക്കുമ്പോൾ ബ്ലൗസിന്റെ മാതൃക കൂടെ കൊണ്ടുവരണം. ഡെലിവറി തീയതി രസീതിൽ എഴുതിയിരിക്കും."),
+        row("manual_0174_neutral_male", "neutral_replay", "male", "Puck", "", "", "ചെറിയ ഹോട്ടലിൽ ഉച്ചഭക്ഷണം പന്ത്രണ്ടരയ്ക്ക് ശേഷം ലഭിക്കും. പാർസൽ വേണമെങ്കിൽ മുൻകൂട്ടി വിളിക്കുന്നത് നല്ലതാണ്."),
+        row("manual_0175_emotion_female_laughter", "emotion", "female", "Aoede", "laughter", "[laughter]", "മൈക്ക് ഓണാണെന്ന് അറിയാതെ അവൾ പാട്ടിന്റെ ആദ്യ വരി രണ്ടുതവണ അഭ്യാസിച്ചു, പിന്നെ [laughter] എല്ലാവരും കൈയടിച്ചപ്പോൾ മുഖം ചുവന്നു."),
+        row("manual_0176_emotion_male_laughter", "emotion", "male", "Charon", "laughter", "[laughter]", "ട്രെയിനർ ഗൗരവമായി എണ്ണിക്കൊണ്ടിരിക്കെ ഞാൻ തെറ്റായ ഡംബൽ എടുത്തു; കണ്ണാടിയിൽ അത് കണ്ടപ്പോൾ [laughter] എന്റെ തന്നെ ചിരി നിർത്താൻ പറ്റിയില്ല."),
+        row("manual_0177_emotion_female_giggle", "emotion", "female", "Kore", "giggle", "[giggle]", "ബാങ്ക് ഫോമിൽ occupation എന്നിടത്ത് ഞാൻ hobby എഴുതാൻ തുടങ്ങിയിരുന്നു. ക്ലർക്കിന്റെ മുഖം കണ്ടപ്പോൾ [giggle] ഉടനെ തിരുത്തി."),
+        row("manual_0178_emotion_male_giggle", "emotion", "male", "Fenrir", "giggle", "[giggle]", "പാർക്കിൽ യോഗ ചെയ്യുമ്പോൾ എന്റെ സമീപത്ത് നായയും അതേ പോസിൽ ഇരുന്നു. [giggle] ഫോട്ടോ എടുക്കാതെ ഇരിക്കാൻ കഴിഞ്ഞില്ല."),
+        row("manual_0179_emotion_female_whisper", "emotion", "female", "Despina", "whisper", "[whisper]", "ക്ലാസ് ടെസ്റ്റ് തുടങ്ങുന്നതിന് മുമ്പ് അവൾ പെൻസിൽ മറന്നെന്ന് പറഞ്ഞു; ഞാൻ [whisper] എന്റെ അധിക പെൻസിൽ ബാഗിന്റെ വശത്ത് വെച്ചിട്ടുണ്ട് എന്നു പറഞ്ഞു."),
+        row("manual_0180_emotion_male_whisper", "emotion", "male", "Orus", "whisper", "[whisper]", "ആശുപത്രി മുറിയിൽ അച്ഛൻ ഉറങ്ങുകയായിരുന്നു. നഴ്സ് വന്നപ്പോൾ ഞാൻ [whisper] മരുന്ന് സമയം കുറിച്ച് ചോദിച്ചു."),
+        row("manual_0181_emotion_female_cry", "emotion", "female", "Laomedeia", "cry", "[cry]", "വിമാനത്താവളത്തിലെ ഗേറ്റിനരികിൽ അമ്മ കൈവീശി നിന്നു. ഞാൻ അകത്ത് കയറിയ ശേഷം [cry] അവളുടെ മുഖം വീണ്ടും ഓർത്തു."),
+        row("manual_0182_emotion_male_cry", "emotion", "male", "Iapetus", "cry", "[cry]", "പഴയ പോലീസ് ബാഡ്ജ് അച്ഛന്റെ പെട്ടിയിൽ കണ്ടപ്പോൾ [cry] അവൻ പറഞ്ഞ ഡ്യൂട്ടി കഥകൾ എല്ലാം തിരിച്ചു വന്നു."),
+        row("manual_0183_emotion_female_sigh_tired", "emotion", "female", "Leda", "sigh_frustration_tired", "[sigh]", "ബസ് ഡിപ്പോയിൽ മൂന്നാമത്തെ കൗണ്ടറിലേക്കും അയച്ചപ്പോൾ [sigh] കൈയിലെ ബാഗ് പോലും ഭാരമായി തോന്നി."),
+        row("manual_0184_emotion_male_sigh_tired", "emotion", "male", "Algenib", "sigh_frustration_tired", "[sigh]", "ഫോൺ റിപെയർ കഴിഞ്ഞെന്ന് പറഞ്ഞിട്ട് വീണ്ടും അതേ പ്രശ്നം കണ്ടു. [sigh] നാളെ വീണ്ടും കടയിൽ പോകണം."),
+        row("manual_0185_emotion_female_sigh_nervous", "emotion", "female", "Callirrhoe", "sigh_nervous_uncertain", "[sigh]", "സംഗീത പരീക്ഷയുടെ വാതിലിന് പുറത്തുനിന്നപ്പോൾ [sigh] ആദ്യ സ്വരം തന്നെ തെറ്റുമോ എന്ന് ഭയമായി."),
+        row("manual_0186_emotion_male_sigh_nervous", "emotion", "male", "Puck", "sigh_nervous_uncertain", "[sigh]", "തൊഴിൽ അഭിമുഖത്തിന് മുമ്പ് ഫയൽ തുറന്ന് നോക്കിയപ്പോൾ ഒരു സർട്ടിഫിക്കറ്റ് കാണാനില്ല. [sigh] ഇപ്പോൾ എന്ത് പറയണം എന്ന് അറിയില്ല."),
+        row("manual_0187_emotion_female_positive", "emotion", "female", "Aoede", "positive_excited", "", "ഡാൻസ് ടീച്ചർ അടുത്ത പരിപാടിയിൽ എനിക്ക് മുന്നിലെ വരി തന്നു. വീട്ടിലെത്തും വരെ ആ സന്തോഷം മുഖത്ത് നിന്ന് പോയില്ല."),
+        row("manual_0188_emotion_male_positive", "emotion", "male", "Charon", "positive_excited", "", "ക്രിക്കറ്റ് പരിശീലനത്തിൽ ഇന്ന് ആദ്യമായി പന്ത് കൃത്യമായി മിഡിലിൽ തട്ടി. ശബ്ദം കേട്ട നിമിഷം മുഴുവൻ ശരീരവും ഉണർന്നു."),
+        row("manual_0189_emotion_female_curious", "emotion", "female", "Kore", "curious_confused", "", "മ്യൂസിയത്തിലെ ആ പഴയ നാണയം ഇത്ര ചെറുതായിട്ടും എങ്ങനെ ഇത്ര വിലപ്പെട്ടത് ആയി? അതിന്റെ കഥ കേൾക്കാൻ ഞാൻ കാത്തിരുന്നു."),
+        row("manual_0190_emotion_male_curious", "emotion", "male", "Fenrir", "curious_confused", "", "റെയിൽവേ ഫോമിൽ ഒരേ വിവരം രണ്ട് സ്ഥലത്ത് ചോദിക്കുന്നത് എന്തിനാണ്? കൗണ്ടറിലെ ആളോട് ചോദിക്കാതെ വിടാൻ തോന്നിയില്ല."),
+        row("manual_0191_emotion_female_cough", "emotion", "female", "Despina", "cough", "[cough]", "പൂക്കടയിലെ മല്ലിയുടെ മണം ശക്തമായിരുന്നു; [cough] ഒരു നിമിഷം പുറത്തേക്ക് നിന്നിട്ട് പിന്നെ ഓർഡർ പറഞ്ഞു."),
+        row("manual_0192_emotion_male_laughter", "emotion", "male", "Orus", "laughter", "[laughter]", "ബാർബർ കണ്ണാടി തിരിച്ചു കാണിച്ചപ്പോൾ പിന്നിലെ മുടി ഞാൻ കരുതിയതിലും ചെറുതായിരുന്നു. അവന്റെ നിഷ്കളങ്ക മുഖം കണ്ടപ്പോൾ [laughter] വിഷമം പോലും പോയി."),
+        row("manual_0193_emotion_female_giggle", "emotion", "female", "Laomedeia", "giggle", "[giggle]", "കുടുംബയോഗത്തിൽ മാമൻ പഴയ ഡയറ്റ് കഥ പറയുമ്പോൾ പ്ലേറ്റിൽ പായസം രണ്ടാമതും എടുത്തു. [giggle] ആരും ചൂണ്ടിക്കാണിച്ചില്ല."),
+        row("manual_0194_emotion_male_whisper", "emotion", "male", "Iapetus", "whisper", "[whisper]", "തിയേറ്ററിൽ സിനിമ തുടങ്ങി കഴിഞ്ഞപ്പോൾ അവൻ കഥ എന്താണെന്ന് ചോദിച്ചു. ഞാൻ [whisper] ആദ്യം ശാന്തമായി കാണൂ എന്ന് പറഞ്ഞു."),
+        row("manual_0195_emotion_female_cry", "emotion", "female", "Leda", "cry", "[cry]", "വധുവിന്റെ മുറിയിൽ അമ്മ മാല ശരിയാക്കുമ്പോൾ [cry] ഇരുവരും കുറച്ച് നേരം ഒന്നും പറഞ്ഞില്ല."),
+        row("manual_0196_emotion_male_sigh_tired", "emotion", "male", "Algenib", "sigh_frustration_tired", "[sigh]", "വെള്ളക്കരം അടയ്ക്കാൻ ചെറിയ രസീത് തേടി മുഴുവൻ അലമാര മറിച്ചു. കിട്ടിയപ്പോൾ [sigh] സമയം തന്നെ പോയിരുന്നു."),
+        row("manual_0197_emotion_female_positive", "emotion", "female", "Callirrhoe", "positive_excited", "", "കണ്ണാടി ഫ്രെയിം ധരിച്ച് പുറത്തുവന്നപ്പോൾ സഹോദരി ഉടനെ അത് നിനക്കൊത്തുപോകുന്നു എന്നു പറഞ്ഞു. എനിക്ക് തിരഞ്ഞെടുപ്പ് ശരിയായെന്ന് തോന്നി."),
+        row("manual_0198_emotion_male_curious", "emotion", "male", "Puck", "curious_confused", "", "പഴയ റേഡിയോയിൽ സ്റ്റേഷൻ പിടിക്കുമ്പോൾ ശബ്ദം ഇടയ്ക്ക് മാത്രം തെളിയുന്നത് എന്തുകൊണ്ടാണ്? അത് തുറന്ന് നോക്കാൻ എനിക്ക് താൽപ്പര്യം തോന്നി."),
+        row("manual_0199_emotion_female_sigh_nervous", "emotion", "female", "Aoede", "sigh_nervous_uncertain", "[sigh]", "സ്കാൻ റിപ്പോർട്ട് കൈയിൽ കിട്ടിയെങ്കിലും തുറക്കാൻ ഒരു മടി തോന്നി. [sigh] ആദ്യം ഡോക്ടറുടെ മുറിയിലേക്കു പോകാം."),
+        row("manual_0200_emotion_male_cough", "emotion", "male", "Charon", "cough", "[cough]", "പെട്രോൾ പമ്പിലെ പൊടി മൂക്കിൽ കയറിയതോടെ [cough] ഒരു നിമിഷം സംസാരിക്കാൻ കഴിഞ്ഞില്ല, പിന്നെ ബിൽ ചോദിച്ചു."),
+    ]
+)
+
+
 def count_by(rows: Iterable[Dict[str, str]], key: str) -> Counter:
     return Counter(row[key] for row in rows)
 
@@ -972,10 +1098,11 @@ def validate_rows(rows: List[Dict[str, str]]):
         if unsupported:
             row_issues.append(f"unsupported tags: {unsupported}")
         if row["tag"]:
-            if not text.startswith(row["tag"]):
-                row_issues.append(f"text must start with {row['tag']}")
             if found_tags.count(row["tag"]) != 1:
                 row_issues.append(f"{row['tag']} must occur exactly once")
+            unexpected = [tag for tag in found_tags if tag != row["tag"]]
+            if unexpected:
+                row_issues.append(f"unexpected extra tags: {unexpected}")
         elif found_tags:
             row_issues.append("unexpected bracket tag")
         if row_issues:
