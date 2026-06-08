@@ -145,6 +145,55 @@ python IndicFinetuning/train_indic.py
 python IndicFinetuning/inference_indic.py
 ```
 
+## OpenRouter Synthetic Malayalam Dataset
+
+The main synthetic continuation generator creates an 800-sample Malayalam dataset with balanced male/female voices:
+
+```text
+conversation: 400
+neutral_replay: 200
+emotion: 200
+female: 400
+male: 400
+```
+
+First write only the text plan and manifest:
+
+```bash
+python IndicFinetuning/generate_openrouter_main_dataset.py \
+  --output ./IndicFinetuning/datasets/OpenRouterMain800 \
+  --dry-run
+```
+
+Generate a small test batch:
+
+```bash
+export OPENROUTER_API_KEY="your_api_key"
+
+python IndicFinetuning/generate_openrouter_main_dataset.py \
+  --output ./IndicFinetuning/datasets/OpenRouterMain800 \
+  --limit 10 \
+  --response-format pcm
+```
+
+Generate the full dataset. Existing WAVs are skipped by default, so this can be resumed:
+
+```bash
+python IndicFinetuning/generate_openrouter_main_dataset.py \
+  --output ./IndicFinetuning/datasets/OpenRouterMain800 \
+  --response-format pcm \
+  --skip-existing
+```
+
+The generated folder is compatible with training:
+
+```text
+IndicFinetuning/datasets/OpenRouterMain800/
+├── metadata.csv
+├── manifest.jsonl
+└── wavs/
+```
+
 ## Switching Languages
 
 For Tamil:
