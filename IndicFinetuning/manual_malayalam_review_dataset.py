@@ -15,7 +15,7 @@ from IndicFinetuning.generate_openrouter_pilot_dataset import make_tts_input
 from IndicFinetuning.indic_text import normalize_indic_text
 
 
-DEFAULT_OUTPUT = "./IndicFinetuning/datasets/OpenRouterManualReview50"
+DEFAULT_OUTPUT = "./IndicFinetuning/datasets/OpenRouterManualReview800"
 SUPPORTED_TAGS = {"[laughter]", "[giggle]", "[sigh]", "[cry]", "[whisper]", "[cough]"}
 TAG_RE = re.compile(r"\[[^\]]+\]")
 WORD_RE = re.compile(r"[\u0D00-\u0D7F]+")
