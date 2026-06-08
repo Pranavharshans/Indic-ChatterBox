@@ -145,63 +145,47 @@ python IndicFinetuning/train_indic.py
 python IndicFinetuning/inference_indic.py
 ```
 
-## OpenRouter Synthetic Malayalam Dataset
+## Manual Malayalam Review Dataset
 
-The main synthetic continuation generator creates an 800-sample Malayalam dataset with balanced male/female voices:
+The manual review dataset is filled row by row. It validates counts from row fields and validates tags from the actual text content.
 
-```text
-conversation: 400
-neutral_replay: 200
-emotion: 200
-female: 400
-male: 400
-```
-
-First write the local text plan and manifest. This does not call OpenRouter and does not need an API key:
-
-```bash
-python IndicFinetuning/generate_openrouter_main_dataset.py \
-  --output ./IndicFinetuning/datasets/OpenRouterMain800 \
-  --stage plan
-```
-
-Validate the text plan before generating audio:
-
-```bash
-python IndicFinetuning/generate_openrouter_main_dataset.py \
-  --output ./IndicFinetuning/datasets/OpenRouterMain800 \
-  --stage validate
-```
-
-Generate a small test batch:
-
-```bash
-export OPENROUTER_API_KEY="your_api_key"
-
-python IndicFinetuning/generate_openrouter_main_dataset.py \
-  --output ./IndicFinetuning/datasets/OpenRouterMain800 \
-  --stage audio \
-  --limit 10 \
-  --response-format pcm
-```
-
-Generate the full dataset. Existing WAVs are skipped by default, so this can be resumed:
-
-```bash
-python IndicFinetuning/generate_openrouter_main_dataset.py \
-  --output ./IndicFinetuning/datasets/OpenRouterMain800 \
-  --stage audio \
-  --response-format pcm \
-  --skip-existing
-```
-
-The generated folder is compatible with training:
+The first review batch contains:
 
 ```text
-IndicFinetuning/datasets/OpenRouterMain800/
+rows: 50
+female: 25
+male: 25
+conversation: 25
+neutral_replay: 12
+emotion: 13
+```
+
+Write the manual text manifest. This does not call OpenRouter and does not need an API key:
+
+```bash
+python IndicFinetuning/manual_malayalam_review_dataset.py \
+  --output ./IndicFinetuning/datasets/OpenRouterManualReview50
+```
+
+Inspect before generating audio:
+
+```bash
+sed -n '1,80p' IndicFinetuning/datasets/OpenRouterManualReview50/metadata.csv
+```
+
+The generated folder is compatible with training once WAVs are added:
+
+```text
+IndicFinetuning/datasets/OpenRouterManualReview50/
 ├── metadata.csv
 ├── manifest.jsonl
 └── wavs/
+```
+
+Generate audio only after the text has been reviewed.
+
+```bash
+export OPENROUTER_API_KEY="your_api_key"
 ```
 
 ## Switching Languages
