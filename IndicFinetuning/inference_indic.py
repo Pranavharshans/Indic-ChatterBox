@@ -25,7 +25,8 @@ logger = setup_logger("Indic-Chatterbox-Inference")
 cfg = IndicTrainConfig()
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 ADAPTER_PATH = os.environ.get("INDIC_ADAPTER_PATH", os.path.join(cfg.output_dir, "indic_adapter"))
-OUTPUT_FILE = "./IndicFinetuning/outputs/indic_output.wav"
+OUTPUT_FILE = os.environ.get("INDIC_OUTPUT_FILE", "./IndicFinetuning/outputs/indic_output.wav")
+SKIP_VAD = os.environ.get("INDIC_SKIP_VAD", "0") == "1"
 
 
 def set_seed(seed):
@@ -102,6 +103,8 @@ def generate_sentence_audio(engine, text, prompt_path, language_id):
     if isinstance(wav_tensor, tuple):
         wav_tensor = wav_tensor[0]
     wav_np = wav_tensor.squeeze().cpu().numpy()
+    if SKIP_VAD:
+        return engine.sr, wav_np
     return engine.sr, trim_silence_with_vad(wav_np, engine.sr)
 
 
