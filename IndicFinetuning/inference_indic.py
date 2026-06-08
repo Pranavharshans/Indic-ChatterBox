@@ -14,7 +14,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from IndicFinetuning.config_indic import IndicTrainConfig
-from IndicFinetuning.indic_engine import attach_indic_tokenizer, get_engine_class
+from IndicFinetuning.indic_engine import attach_indic_tokenizer, get_engine_class, tokenizer_vocab_size
 from IndicFinetuning.indic_text import apply_language_tag, normalize_indic_text
 from src.chatterbox_.models.t3.t3 import T3
 from src.model import resize_and_load_t3_weights
@@ -27,6 +27,9 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 ADAPTER_PATH = os.environ.get("INDIC_ADAPTER_PATH", os.path.join(cfg.output_dir, "indic_adapter"))
 OUTPUT_FILE = os.environ.get("INDIC_OUTPUT_FILE", "./IndicFinetuning/outputs/indic_output.wav")
 SKIP_VAD = os.environ.get("INDIC_SKIP_VAD", "0") == "1"
+
+if not cfg.is_turbo:
+    cfg.new_vocab_size = tokenizer_vocab_size(cfg)
 
 
 def set_seed(seed):
