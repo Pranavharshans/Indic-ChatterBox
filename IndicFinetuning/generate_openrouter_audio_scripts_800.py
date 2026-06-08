@@ -221,10 +221,20 @@ def row_prompt_specs(rows: List[Dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
-def build_prompt(rows: List[Dict[str, str]], previous_errors: Optional[List[str]] = None) -> str:
+def build_prompt(
+    rows: List[Dict[str, str]],
+    previous_errors: Optional[List[str]] = None,
+    forbidden_chunks: Optional[List[str]] = None,
+) -> str:
     errors = ""
     if previous_errors:
         errors = "\nPrevious attempt failed validation. Fix these issues:\n" + "\n".join(f"- {err}" for err in previous_errors[:20])
+    forbidden = ""
+    if forbidden_chunks:
+        forbidden = (
+            "\nAvoid these exact repeated Malayalam phrase fragments. Do not use them verbatim in any row:\n"
+            + "\n".join(f"- {chunk}" for chunk in forbidden_chunks[:40])
+        )
     return f"""
 Generate Malayalam TTS training transcript rows as JSON only.
 
@@ -243,6 +253,7 @@ Rules:
 
 Rows to generate:
 {row_prompt_specs(rows)}
+{forbidden}
 {errors}
 """.strip()
 
@@ -291,6 +302,33 @@ def request_chat(api_key: str, model: str, prompt: str, retries: int = 3) -> str
             last_error = exc
             time.sleep(2**attempt)
     raise RuntimeError(f"OpenRouter chat request failed after {retries} attempts: {last_error}")
+
+
+def generate_valid_batch(
+    api_key: str,
+    model: str,
+    rows: List[Dict[str, str]],
+    raw_dir: Path,
+    label: str,
+    retries: int,
+    forbidden_chunks: Optional[List[str]] = None,
+) -> List[Dict[str, str]]:
+    previous_errors = None
+    accepted_rows = None
+    for attempt in range(1, retries + 1):
+        prompt = build_prompt(rows, previous_errors, forbidden_chunks)
+        content = request_chat(api_key, model, prompt)
+        (raw_dir / f"{label}_attempt_{attempt}.txt").write_text(content, encoding="utf-8")
+        try:
+            generated = extract_json_array(content)
+            accepted_rows, errors = validate_batch(rows, generated)
+        except Exception as exc:
+            accepted_rows, errors = None, [str(exc)]
+        if not errors and accepted_rows is not None:
+            return accepted_rows
+        previous_errors = errors
+        print(f"{label} attempt {attempt} failed: {errors[:3]}")
+    raise RuntimeError(f"Could not generate valid {label}: {previous_errors}")
 
 
 def validate_batch(expected_rows: List[Dict[str, str]], generated_rows: List[Dict[str, str]]) -> tuple[List[Dict[str, str]], List[str]]:
@@ -353,6 +391,64 @@ def repeated_chunks(rows: List[Dict[str, str]], chunk_size: int = 6) -> Dict[str
         for index in range(len(words) - chunk_size + 1):
             counts[" ".join(words[index : index + chunk_size])] += 1
     return {chunk: count for chunk, count in counts.items() if count > 2}
+
+
+def row_chunks(row: Dict[str, str], chunk_size: int = 6) -> set[str]:
+    words = WORD_RE.findall(TAG_RE.sub("", row["text"]))
+    return {" ".join(words[index : index + chunk_size]) for index in range(len(words) - chunk_size + 1)}
+
+
+def repeated_chunk_repair_ids(rows: List[Dict[str, str]], chunk_size: int = 6) -> List[str]:
+    occurrences: Dict[str, List[str]] = defaultdict(list)
+    for row in rows:
+        for chunk in row_chunks(row, chunk_size):
+            occurrences[chunk].append(row["id"])
+
+    repair_ids = set()
+    for ids in occurrences.values():
+        if len(ids) > 2:
+            repair_ids.update(ids[2:])
+    row_order = {row["id"]: index for index, row in enumerate(rows)}
+    return sorted(repair_ids, key=lambda row_id: row_order[row_id])
+
+
+def repair_repeated_chunks(
+    completed: Dict[str, Dict[str, str]],
+    plan: List[Dict[str, str]],
+    api_key: str,
+    model: str,
+    raw_dir: Path,
+    retries: int,
+    repair_rounds: int,
+    repair_batch_size: int,
+    output: Path,
+):
+    plan_by_id = {row["id"]: row for row in plan}
+    for repair_round in range(1, repair_rounds + 1):
+        ordered_rows = [completed[row["id"]] for row in plan]
+        repeats = repeated_chunks(ordered_rows)
+        if not repeats:
+            return
+
+        repair_ids = repeated_chunk_repair_ids(ordered_rows)
+        worst = sorted(repeats.items(), key=lambda item: item[1], reverse=True)[:10]
+        print(f"Repair round {repair_round}: {len(repair_ids)} rows caused repeated chunks. Worst repeats: {worst}")
+
+        forbidden_chunks = sorted(repeats, key=lambda chunk: repeats[chunk], reverse=True)
+        for start in range(0, len(repair_ids), repair_batch_size):
+            batch_ids = repair_ids[start : start + repair_batch_size]
+            batch_plan = [plan_by_id[row_id] for row_id in batch_ids]
+            label = f"repair_{repair_round}_{start:04d}"
+            accepted_rows = generate_valid_batch(api_key, model, batch_plan, raw_dir, label, retries, forbidden_chunks)
+            for row in accepted_rows:
+                completed[row["id"]] = row
+
+        audit_partial = {
+            "completed": len(completed),
+            "repair_round": repair_round,
+            "remaining_repeated_chunks": len(repeated_chunks([completed[row["id"]] for row in plan])),
+        }
+        write_outputs(output, [completed[row["id"]] for row in plan], audit_partial)
 
 
 def validate_full_dataset(rows: List[Dict[str, str]]):
@@ -429,6 +525,8 @@ def main():
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--batch-size", type=int, default=20)
     parser.add_argument("--retries", type=int, default=4)
+    parser.add_argument("--repair-rounds", type=int, default=3)
+    parser.add_argument("--repair-batch-size", type=int, default=20)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run-plan", action="store_true")
     args = parser.parse_args()
@@ -461,24 +559,14 @@ def main():
             print(f"Batch {start // args.batch_size + 1}: reused {len(batch)} rows")
             continue
 
-        previous_errors = None
-        accepted_rows = None
-        for attempt in range(1, args.retries + 1):
-            prompt = build_prompt(missing_batch, previous_errors)
-            content = request_chat(api_key, args.model, prompt)
-            (raw_dir / f"batch_{start:04d}_attempt_{attempt}.txt").write_text(content, encoding="utf-8")
-            try:
-                generated = extract_json_array(content)
-                accepted_rows, errors = validate_batch(missing_batch, generated)
-            except Exception as exc:
-                accepted_rows, errors = None, [str(exc)]
-            if not errors and accepted_rows is not None:
-                previous_errors = None
-                break
-            previous_errors = errors
-            print(f"Batch {start // args.batch_size + 1} attempt {attempt} failed: {errors[:3]}")
-        if accepted_rows is None or previous_errors:
-            raise RuntimeError(f"Could not generate valid batch starting at {start}: {previous_errors}")
+        accepted_rows = generate_valid_batch(
+            api_key,
+            args.model,
+            missing_batch,
+            raw_dir,
+            f"batch_{start:04d}",
+            args.retries,
+        )
 
         for row in accepted_rows:
             completed[row["id"]] = row
@@ -490,6 +578,19 @@ def main():
         }
         write_outputs(output, [completed[row["id"]] for row in plan if row["id"] in completed], audit_partial)
         print(f"Batch {start // args.batch_size + 1}: accepted {len(accepted_rows)} rows, completed {len(completed)}/800")
+
+    if args.repair_rounds > 0:
+        repair_repeated_chunks(
+            completed,
+            plan,
+            api_key,
+            args.model,
+            raw_dir,
+            args.retries,
+            args.repair_rounds,
+            args.repair_batch_size,
+            output,
+        )
 
     ordered_rows = [completed[row["id"]] for row in plan]
     audit = validate_full_dataset(ordered_rows)
