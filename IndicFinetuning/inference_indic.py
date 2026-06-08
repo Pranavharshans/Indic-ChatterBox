@@ -24,7 +24,7 @@ from src.utils import setup_logger, trim_silence_with_vad
 logger = setup_logger("Indic-Chatterbox-Inference")
 cfg = IndicTrainConfig()
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-ADAPTER_PATH = os.path.join(cfg.output_dir, "indic_adapter")
+ADAPTER_PATH = os.environ.get("INDIC_ADAPTER_PATH", os.path.join(cfg.output_dir, "indic_adapter"))
 OUTPUT_FILE = "./IndicFinetuning/outputs/indic_output.wav"
 
 
