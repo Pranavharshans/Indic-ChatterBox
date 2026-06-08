@@ -173,19 +173,24 @@ def make_tts_input(row: Dict[str, str]) -> str:
 
     before, after = split_tagged_text(text, tag)
     direction = TAG_AUDIO_DIRECTIONS[tag]
-    sequence = []
+    placement = []
     if before:
-        sequence.append(f'First speak this Malayalam text naturally: "{before}"')
-    sequence.append(direction)
+        placement.append(f'Before {tag}: "{before}"')
+    placement.append(f"At {tag}: {direction}")
     if after:
-        sequence.append(f'Then speak this Malayalam text naturally: "{after}"')
+        placement.append(f'After {tag}: "{after}"')
 
     return (
         f"{style}\n\n"
-        f"The training transcript contains the control tag {tag}. Do not pronounce the bracketed tag. "
-        "Instead, perform the audio event exactly at that position.\n\n"
-        + "\n".join(f"{idx}. {step}" for idx, step in enumerate(sequence, start=1))
-        + "\n\nKeep it single-speaker, clean, natural Malayalam, no background music, no extra words."
+        "Use this exact Malayalam audio script, including the bracketed control tag position:\n"
+        f'"{text}"\n\n'
+        f"The bracketed token {tag} is not spoken as a word. It is an audio control marker. "
+        f"When you reach {tag}, perform the matching non-verbal or emotional audio event exactly there, "
+        "then continue the Malayalam line naturally.\n\n"
+        "Placement guide:\n"
+        + "\n".join(f"{idx}. {step}" for idx, step in enumerate(placement, start=1))
+        + "\n\nDo not omit the event. Do not say the bracket text aloud. "
+        "Keep it single-speaker, clean, natural Malayalam, no background music, no extra words."
     )
 
 
@@ -356,11 +361,7 @@ def validate_batch(expected_rows: List[Dict[str, str]], generated_rows: List[Dic
         if row_id not in generated_by_id:
             continue
         text = normalize_generated_text(str(generated_by_id[row_id]["text"]))
-        row = dict(expected)
-        row["text"] = text
-        row["spoken_text"] = clean_transcript_for_tts(text)
-        row["style"] = STYLE_BY_CATEGORY[row["category"]]
-        row["tts_input"] = make_tts_input(row)
+        row = hydrate_row({**expected, "text": text})
         merged.append(row)
 
         words = WORD_RE.findall(text)
@@ -382,6 +383,15 @@ def validate_batch(expected_rows: List[Dict[str, str]], generated_rows: List[Dic
         if not re.search(r"[\u0D00-\u0D7F]", text):
             errors.append(f"{row_id}: no Malayalam characters found")
     return merged, errors
+
+
+def hydrate_row(row: Dict[str, str]) -> Dict[str, str]:
+    hydrated = dict(row)
+    hydrated["text"] = normalize_generated_text(hydrated["text"])
+    hydrated["spoken_text"] = clean_transcript_for_tts(hydrated["text"])
+    hydrated["style"] = STYLE_BY_CATEGORY[hydrated["category"]]
+    hydrated["tts_input"] = make_tts_input(hydrated)
+    return hydrated
 
 
 def repeated_chunks(rows: List[Dict[str, str]], chunk_size: int = 6) -> Dict[str, int]:
@@ -516,7 +526,7 @@ def load_existing(output: Path) -> List[Dict[str, str]]:
     manifest = output / "manifest.jsonl"
     if not manifest.exists():
         return []
-    return [json.loads(line) for line in manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [hydrate_row(json.loads(line)) for line in manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def main():
