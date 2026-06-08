@@ -157,12 +157,20 @@ female: 400
 male: 400
 ```
 
-First write only the text plan and manifest:
+First write the local text plan and manifest. This does not call OpenRouter and does not need an API key:
 
 ```bash
 python IndicFinetuning/generate_openrouter_main_dataset.py \
   --output ./IndicFinetuning/datasets/OpenRouterMain800 \
-  --dry-run
+  --stage plan
+```
+
+Validate the text plan before generating audio:
+
+```bash
+python IndicFinetuning/generate_openrouter_main_dataset.py \
+  --output ./IndicFinetuning/datasets/OpenRouterMain800 \
+  --stage validate
 ```
 
 Generate a small test batch:
@@ -172,6 +180,7 @@ export OPENROUTER_API_KEY="your_api_key"
 
 python IndicFinetuning/generate_openrouter_main_dataset.py \
   --output ./IndicFinetuning/datasets/OpenRouterMain800 \
+  --stage audio \
   --limit 10 \
   --response-format pcm
 ```
@@ -181,6 +190,7 @@ Generate the full dataset. Existing WAVs are skipped by default, so this can be 
 ```bash
 python IndicFinetuning/generate_openrouter_main_dataset.py \
   --output ./IndicFinetuning/datasets/OpenRouterMain800 \
+  --stage audio \
   --response-format pcm \
   --skip-existing
 ```
