@@ -22,29 +22,28 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 logger = setup_logger("Malayalam-Emotion-Polish")
 
 
-def main():
-    cfg = MalayalamEmotionPolishConfig()
-    logger.info("--- Starting Malayalam Emotion Polish Continuation ---")
-    logger.info(f"Dataset: {cfg.csv_path}")
-    logger.info(f"Continue adapter: {cfg.continue_adapter_path}")
+def run_training(cfg, run_logger=logger, run_title="Malayalam Emotion Polish Continuation"):
+    run_logger.info(f"--- Starting {run_title} ---")
+    run_logger.info(f"Dataset: {cfg.csv_path}")
+    run_logger.info(f"Continue adapter: {cfg.continue_adapter_path}")
 
     if not check_pretrained_models(mode="chatterbox"):
         sys.exit(1)
 
     inferred_vocab_size = tokenizer_vocab_size(cfg)
     if inferred_vocab_size != cfg.new_vocab_size:
-        logger.warning(f"Configured new_vocab_size={cfg.new_vocab_size}, tokenizer has {inferred_vocab_size}. Using tokenizer size.")
+        run_logger.warning(f"Configured new_vocab_size={cfg.new_vocab_size}, tokenizer has {inferred_vocab_size}. Using tokenizer size.")
         cfg.new_vocab_size = inferred_vocab_size
 
     engine_class = get_engine_class(False)
 
-    logger.info("Loading original model to extract T3 weights...")
+    run_logger.info("Loading original model to extract T3 weights...")
     tts_engine_original = engine_class.from_local(cfg.model_dir, device="cpu")
     tts_engine_original = attach_indic_tokenizer(tts_engine_original, cfg)
     pretrained_t3_state_dict = tts_engine_original.t3.state_dict()
     original_t3_config = tts_engine_original.t3.hp
 
-    logger.info(f"Creating resized T3 model with vocab size: {cfg.new_vocab_size}")
+    run_logger.info(f"Creating resized T3 model with vocab size: {cfg.new_vocab_size}")
     new_t3_config = original_t3_config
     new_t3_config.text_tokens_dict_size = cfg.new_vocab_size
     setattr(new_t3_config, "use_cache", False)
@@ -70,7 +69,7 @@ def main():
     if not cfg.continue_adapter_path or not Path(cfg.continue_adapter_path).exists():
         raise FileNotFoundError(f"Adapter not found: {cfg.continue_adapter_path}")
 
-    logger.info("Loading 17k Malayalam adapter as trainable continuation adapter...")
+    run_logger.info("Loading 17k Malayalam adapter as trainable continuation adapter...")
     tts_engine_new.t3 = PeftModel.from_pretrained(tts_engine_new.t3, cfg.continue_adapter_path, is_trainable=True)
     tts_engine_new.t3.print_trainable_parameters()
 
@@ -111,7 +110,11 @@ def main():
 
     save_path = os.path.join(cfg.output_dir, "indic_adapter")
     tts_engine_new.t3.save_pretrained(save_path)
-    logger.info(f"Malayalam emotion polish adapter saved to: {save_path}")
+    run_logger.info(f"Malayalam emotion polish adapter saved to: {save_path}")
+
+
+def main():
+    run_training(MalayalamEmotionPolishConfig())
 
 
 if __name__ == "__main__":
