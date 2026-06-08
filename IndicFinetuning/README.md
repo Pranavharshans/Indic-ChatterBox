@@ -62,6 +62,16 @@ python IndicFinetuning/tokenizer/build_indic_tokenizer.py \
   --languages ml
 ```
 
+For a conversational/emotion continuation dataset, include the core emotion tags:
+
+```bash
+python IndicFinetuning/tokenizer/build_indic_tokenizer.py \
+  --base-tokenizer ./pretrained_models/tokenizer.json \
+  --output-tokenizer ./IndicFinetuning/tokenizer/tokenizer_indic.json \
+  --languages ml \
+  --emotion-tags core
+```
+
 3. Copy the printed final vocab size into `new_vocab_size` in `IndicFinetuning/config_indic.py`.
 
 4. Drop data into:

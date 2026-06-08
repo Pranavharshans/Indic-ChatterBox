@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from IndicFinetuning.indic_languages import get_graphemes, get_language_tags
+from IndicFinetuning.emotion_tags import TAG_GROUPS, get_emotion_tags
 
 
 def unique_in_order(values: Iterable[str]) -> List[str]:
@@ -28,16 +29,18 @@ def load_existing_vocab(tokenizer_path: Path) -> set:
     return set(tokenizer.get_vocab().keys())
 
 
-def build_token_list(languages: List[str], include_punctuation: bool) -> List[str]:
+def build_token_list(languages: List[str], include_punctuation: bool, emotion_tags: List[str]) -> List[str]:
     return unique_in_order(
         get_language_tags(languages)
         + get_graphemes(languages, include_common_punctuation=include_punctuation)
+        + emotion_tags
     )
 
 
-def write_manifest(output_path: Path, languages: List[str], added_tokens: List[str], final_vocab_size: int):
+def write_manifest(output_path: Path, languages: List[str], emotion_tags: List[str], added_tokens: List[str], final_vocab_size: int):
     manifest = {
         "languages": languages,
+        "emotion_tags": emotion_tags,
         "added_token_count": len(added_tokens),
         "final_vocab_size": final_vocab_size,
         "added_tokens": added_tokens,
@@ -51,6 +54,8 @@ def main():
     parser.add_argument("--base-tokenizer", default="./pretrained_models/tokenizer.json")
     parser.add_argument("--output-tokenizer", default="./IndicFinetuning/tokenizer/tokenizer_indic.json")
     parser.add_argument("--languages", nargs="+", default=["ml"])
+    parser.add_argument("--emotion-tags", choices=sorted(TAG_GROUPS), default="none")
+    parser.add_argument("--extra-token", action="append", default=[])
     parser.add_argument("--no-common-punctuation", action="store_true")
     args = parser.parse_args()
 
@@ -60,17 +65,24 @@ def main():
 
     tokenizer = Tokenizer.from_file(str(base_path))
     existing_vocab = load_existing_vocab(base_path)
-    candidate_tokens = build_token_list(args.languages, include_punctuation=not args.no_common_punctuation)
+    emotion_tags = get_emotion_tags(args.emotion_tags, args.extra_token)
+    candidate_tokens = build_token_list(
+        args.languages,
+        include_punctuation=not args.no_common_punctuation,
+        emotion_tags=emotion_tags,
+    )
     tokens_to_add = [token for token in candidate_tokens if token not in existing_vocab]
 
     added_count = tokenizer.add_tokens(tokens_to_add)
     tokenizer.save(str(output_path))
     final_vocab_size = len(tokenizer.get_vocab())
-    write_manifest(output_path, args.languages, tokens_to_add, final_vocab_size)
+    write_manifest(output_path, args.languages, emotion_tags, tokens_to_add, final_vocab_size)
 
     print(f"Base tokenizer: {base_path}")
     print(f"Output tokenizer: {output_path}")
     print(f"Languages: {', '.join(args.languages)}")
+    print(f"Emotion tag group: {args.emotion_tags}")
+    print(f"Emotion/control tags: {', '.join(emotion_tags) if emotion_tags else 'none'}")
     print(f"Candidate tokens: {len(candidate_tokens)}")
     print(f"Added tokens: {added_count}")
     print(f"Final vocab size: {final_vocab_size}")
@@ -79,4 +91,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

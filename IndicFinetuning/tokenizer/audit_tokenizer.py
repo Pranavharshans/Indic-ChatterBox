@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from IndicFinetuning.indic_languages import get_graphemes, get_language_tags
+from IndicFinetuning.emotion_tags import TAG_GROUPS, get_emotion_tags
 
 
 def read_csv_texts(path: Path, text_column: int, language_column: Optional[int]) -> List[tuple]:
@@ -55,6 +56,8 @@ def main():
     parser = argparse.ArgumentParser(description="Audit Indic tokenizer coverage against language registry and transcripts.")
     parser.add_argument("--tokenizer", default="./pretrained_models/tokenizer.json")
     parser.add_argument("--languages", nargs="+", default=["ml"])
+    parser.add_argument("--emotion-tags", choices=sorted(TAG_GROUPS), default="none")
+    parser.add_argument("--extra-token", action="append", default=[])
     parser.add_argument("--metadata")
     parser.add_argument("--metadata-format", choices=["csv", "json"], default="csv")
     parser.add_argument("--text-column", type=int, default=2)
@@ -65,12 +68,15 @@ def main():
     tokenizer = Tokenizer.from_file(args.tokenizer)
     vocab = set(tokenizer.get_vocab().keys())
 
-    expected_tokens = get_language_tags(args.languages) + get_graphemes(args.languages)
+    emotion_tags = get_emotion_tags(args.emotion_tags, args.extra_token)
+    expected_tokens = get_language_tags(args.languages) + get_graphemes(args.languages) + emotion_tags
     missing_expected = [token for token in expected_tokens if token not in vocab]
 
     print(f"Tokenizer: {args.tokenizer}")
     print(f"Vocab size: {len(vocab)}")
     print(f"Languages: {', '.join(args.languages)}")
+    print(f"Emotion tag group: {args.emotion_tags}")
+    print(f"Emotion/control tags: {', '.join(emotion_tags) if emotion_tags else 'none'}")
     print(f"Missing registry tokens: {len(missing_expected)}")
     if missing_expected:
         print("".join(missing_expected[:200]))
