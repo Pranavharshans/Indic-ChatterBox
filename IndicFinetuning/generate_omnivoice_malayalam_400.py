@@ -1,5 +1,6 @@
 import argparse
 import json
+import re
 import time
 from pathlib import Path
 
@@ -12,6 +13,7 @@ DEFAULT_MODEL = "k2-fsa/OmniVoice"
 DEFAULT_OUTPUT = "./IndicFinetuning/datasets/LaughterCompositeTest/omni_malayalam_speech"
 DEFAULT_REF_AUDIO = "./Maya.wav"
 DEFAULT_REF_TEXT = "i went to the store to buy some fresh fruits and snacks for the evening"
+DEFAULT_TEXT_FILE = "./IndicFinetuning/resources/omni_malayalam_laughter_source_texts.json"
 SAMPLE_RATE = 24000
 
 TIME_PHRASES = [
@@ -122,22 +124,61 @@ def build_texts(count: int) -> list[dict]:
     raise RuntimeError(f"Could only build {len(rows)} unique texts, requested {count}.")
 
 
-def load_text_file(path: str, count: int) -> list[dict]:
+def normalize_text(text: str) -> str:
+    return " ".join(str(text).split())
+
+
+def row_from_item(item, index: int) -> dict:
+    if isinstance(item, str):
+        row_id = f"omni_ml_{index:04d}"
+        text = item
+    elif isinstance(item, dict):
+        text = item["text"]
+        row_id = item.get("id", f"omni_ml_{index:04d}")
+    else:
+        raise TypeError(f"Unsupported text item at index {index}: {type(item).__name__}")
+    return {"id": str(row_id), "text": normalize_text(text), "language_id": "ml"}
+
+
+def parse_relaxed_json_rows(raw: str) -> list[dict]:
+    pattern = re.compile(r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"text"\s*:\s*"([\s\S]*?)"\s*\}')
     rows = []
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith("{"):
-            item = json.loads(line)
-            text = item["text"]
-            row_id = item.get("id", f"omni_ml_{len(rows) + 1:04d}")
+    for index, match in enumerate(pattern.finditer(raw), start=1):
+        rows.append(
+            {
+                "id": match.group(1).strip(),
+                "text": normalize_text(match.group(2)),
+                "language_id": "ml",
+            }
+        )
+    return rows
+
+
+def load_text_file(path: str, count: int) -> list[dict]:
+    raw = Path(path).read_text(encoding="utf-8")
+    rows = []
+    try:
+        data = json.loads(raw)
+        if isinstance(data, list):
+            rows = [row_from_item(item, index) for index, item in enumerate(data, start=1)]
         else:
-            text = line
-            row_id = f"omni_ml_{len(rows) + 1:04d}"
-        rows.append({"id": row_id, "text": text, "language_id": "ml"})
-        if len(rows) >= count:
-            break
+            raise ValueError("JSON text file must contain a list.")
+    except json.JSONDecodeError:
+        relaxed_rows = parse_relaxed_json_rows(raw)
+        if relaxed_rows:
+            rows = relaxed_rows
+        else:
+            for line in raw.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith("{"):
+                    item = json.loads(line)
+                    rows.append(row_from_item(item, len(rows) + 1))
+                else:
+                    rows.append(row_from_item(line, len(rows) + 1))
+
+    rows = rows[:count]
     if len(rows) < count:
         raise ValueError(f"Text file only provided {len(rows)} rows, requested {count}.")
     return rows
@@ -163,7 +204,7 @@ def main():
     parser.add_argument("--count", type=int, default=400)
     parser.add_argument("--ref-audio", default=DEFAULT_REF_AUDIO)
     parser.add_argument("--ref-text", default=DEFAULT_REF_TEXT)
-    parser.add_argument("--text-file", default=None, help="Optional TXT or JSONL with one Malayalam text per line.")
+    parser.add_argument("--text-file", default=DEFAULT_TEXT_FILE, help="TXT, JSONL, or JSON array with Malayalam text rows.")
     parser.add_argument("--device-map", default="cuda:0")
     parser.add_argument("--dtype", choices=["float16", "bfloat16", "float32"], default="float16")
     parser.add_argument("--skip-existing", action=argparse.BooleanOptionalAction, default=True)
