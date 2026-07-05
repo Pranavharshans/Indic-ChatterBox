@@ -29,6 +29,11 @@ DEFAULT_DESCRIPTION = (
     "Female, Indian, in her 20s, warm natural conversational voice, clear diction, "
     "friendly tone, realistic casual laugh, medium pitch, natural pacing."
 )
+ROUND2_DESCRIPTION = (
+    "Female, in her 30s with an Indian English accent and is an energetic event host, "
+    "bright warm timbre, clear diction, playful tone, naturally amused, expressive laugh, medium-high energy."
+)
+SUPPORTED_TAGS = ("<laugh>", "<giggle>", "<laugh_harder>")
 
 LAUGH_TEXTS = [
     "I tried to stay serious, but <laugh> that answer was too funny to ignore.",
@@ -51,6 +56,39 @@ LAUGH_TEXTS = [
     "I should probably apologize first <laugh> but that mistake was too perfect.",
     "He brought the wrong file again <laugh> and somehow blamed the printer.",
     "I was trying to be polite <laugh> but that joke came out of nowhere.",
+]
+
+ROUND2_TEXTS = [
+    "Wow, the way the lights came on at that exact moment <laugh> I could not have planned it better.",
+    "Everyone was waiting so seriously, and then the music started from the wrong speaker <laugh> that was perfect.",
+    "I asked for one simple entrance, but he came in waving both hands <laugh> the whole room lost it.",
+    "This celebration already feels magical, and honestly <laugh> I am having way too much fun up here.",
+    "The cake almost fell, the camera missed it, and somehow <laugh> that made the moment even better.",
+    "I tried to keep the announcement formal, but your reaction <laugh> made that completely impossible.",
+    "She said she was not nervous, then walked on stage backwards <laugh> and still made it look graceful.",
+    "The countdown reached three, someone shouted surprise too early, and <laugh> now everyone knows.",
+    "I have hosted many events, but this entrance <laugh> is definitely going into my favorite memories.",
+    "The microphone worked only after I complimented it <laugh> so apparently even the sound system likes praise.",
+    "I should not giggle during the opening, but <giggle> that little dance move was honestly adorable.",
+    "You all look so proud right now, and <giggle> I can see three people trying not to cry already.",
+    "He practiced that serious face all morning, but <giggle> it disappeared the second he saw the crowd.",
+    "This surprise was supposed to be secret, but <giggle> half the family has been whispering about it all day.",
+    "I promised I would stay professional, then she made that tiny victory pose <giggle> and I lost focus.",
+    "The little one just clapped before the song even started <giggle> and somehow that was the cutest cue.",
+    "I love how everyone pretended to be calm, while <giggle> the front row was clearly panicking.",
+    "That was such a sweet answer, and <giggle> I can tell you rehearsed it in the mirror.",
+    "The decorations are beautiful, the crowd is ready, and <giggle> someone just photobombed the camera.",
+    "I was about to move to the next segment, but <giggle> that smile in the back row distracted me.",
+    "No, wait, he brought the giant ribbon scissors again <laugh_harder> I cannot believe this is happening twice.",
+    "The confetti cannon fired at the wrong person <laugh_harder> and somehow she still bowed like a champion.",
+    "I said make some noise, not start a full dance battle <laugh_harder> but honestly I respect the energy.",
+    "He tried to open the gift calmly, then the box made that sound <laugh_harder> and the whole stage stopped.",
+    "The mascot missed the step, recovered with a spin, and <laugh_harder> now it looks like part of the show.",
+    "I have no idea who planned that entrance <laugh_harder> but please give them a raise immediately.",
+    "The serious award music started playing for the snack table <laugh_harder> and now I cannot unhear it.",
+    "She waved to the wrong camera for ten full seconds <laugh_harder> but the confidence was incredible.",
+    "The banner opened upside down, everyone cheered anyway, and <laugh_harder> that is why I love this crowd.",
+    "I was ready for applause, but not for that dramatic pose <laugh_harder> this event is officially unforgettable.",
 ]
 
 
@@ -113,9 +151,9 @@ def decode_audio(snac_model, snac_tokens: list[int], device: str) -> np.ndarray:
     return audio.astype(np.float32)
 
 
-def load_texts(path: str | None, count: int) -> list[str]:
+def load_texts(path: str | None, count: int, preset: str) -> list[str]:
     if not path:
-        texts = LAUGH_TEXTS
+        texts = ROUND2_TEXTS if preset == "round2" else LAUGH_TEXTS
     else:
         prompt_path = Path(path)
         texts = []
@@ -145,7 +183,8 @@ def main():
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--snac-model", default=DEFAULT_SNAC_MODEL)
     parser.add_argument("--count", type=int, default=20)
-    parser.add_argument("--description", default=DEFAULT_DESCRIPTION)
+    parser.add_argument("--preset", choices=["round1", "round2"], default="round1")
+    parser.add_argument("--description", default=None)
     parser.add_argument("--text-file", default=None, help="Optional TXT or JSONL with one text per line. JSONL key: text.")
     parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument("--torch-dtype", choices=["bfloat16", "float16", "float32"], default="bfloat16")
@@ -171,10 +210,11 @@ def main():
         "float32": torch.float32,
     }[args.torch_dtype]
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    description = args.description or (ROUND2_DESCRIPTION if args.preset == "round2" else DEFAULT_DESCRIPTION)
 
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
-    texts = load_texts(args.text_file, args.count)
+    texts = load_texts(args.text_file, args.count, args.preset)
 
     print(f"Loading Maya1 model: {args.model}")
     model = AutoModelForCausalLM.from_pretrained(
@@ -192,12 +232,13 @@ def main():
 
     manifest_rows = []
     for index, text in enumerate(texts, start=1):
-        if "<laugh>" not in text:
-            raise ValueError(f"Text {index} does not contain required <laugh> tag: {text}")
+        tags = [tag for tag in SUPPORTED_TAGS if tag in text]
+        if len(tags) != 1:
+            raise ValueError(f"Text {index} must contain exactly one supported tag {SUPPORTED_TAGS}: {text}")
 
         clip_id = f"maya_laugh_{index:04d}"
         output_path = output_dir / f"{clip_id}.wav"
-        prompt = build_prompt(tokenizer, args.description, text)
+        prompt = build_prompt(tokenizer, description, text)
         inputs = tokenizer(prompt, return_tensors="pt")
         inputs = {key: value.to(device) for key, value in inputs.items()}
 
@@ -227,8 +268,10 @@ def main():
             {
                 "id": clip_id,
                 "path": str(output_path),
-                "description": args.description,
+                "description": description,
                 "text": text,
+                "tag": tags[0],
+                "preset": args.preset,
                 "model": args.model,
                 "snac_model": args.snac_model,
                 "sample_rate": 24000,
