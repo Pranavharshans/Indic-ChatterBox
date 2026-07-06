@@ -12,4 +12,7 @@ python IndicFinetuning/multilingual_indic/prepare_rasa_multilingual.py \
   --split train \
   --min-duration 1.0 \
   --max-duration 15.0 \
+  --streaming \
+  --shuffle-buffer 256 \
+  --progress-every 100 \
   --trust-remote-code

@@ -167,12 +167,26 @@ def export_language(args, language: str, writer, wav_dir: Path, config_name: Opt
     exported = 0
     skipped = 0
 
+    print(
+        f"[{language}] columns: audio={audio_column}, text={text_column}, "
+        f"gender={gender_column or 'none'}, language={language_column or 'none'}",
+        flush=True,
+    )
+
     if args.streaming:
         rows = dataset.shuffle(seed=args.seed, buffer_size=args.shuffle_buffer)
     else:
         rows = dataset.shuffle(seed=args.seed)
 
     for index, item in enumerate(rows):
+        if index and args.progress_every and index % args.progress_every == 0:
+            total_hours = sum(seconds_by_gender.values()) / 3600.0
+            print(
+                f"[{language}] scanned={index} exported={exported} skipped={skipped} "
+                f"hours={total_hours:.2f}/{args.hours_per_language:.2f}",
+                flush=True,
+            )
+
         if language_column:
             item_language = str(nested_value(item, language_column) or language).strip().lower()
             if item_language and item_language not in {language, LANGUAGE_NAMES[language]}:
@@ -220,6 +234,13 @@ def export_language(args, language: str, writer, wav_dir: Path, config_name: Opt
         elif seconds_by_gender["unknown"] >= target_seconds:
             break
 
+    total_hours = sum(seconds_by_gender.values()) / 3600.0
+    print(
+        f"[{language}] done exported={exported} skipped={skipped} "
+        f"hours={total_hours:.2f}/{args.hours_per_language:.2f}",
+        flush=True,
+    )
+
     return {
         "language": language,
         "config": config_name,
@@ -246,7 +267,8 @@ def main():
     parser.add_argument("--max-duration", type=float, default=15.0)
     parser.add_argument("--max-samples-per-language", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--shuffle-buffer", type=int, default=10000, help="Shuffle buffer for streaming mode.")
+    parser.add_argument("--shuffle-buffer", type=int, default=256, help="Shuffle buffer for streaming mode.")
+    parser.add_argument("--progress-every", type=int, default=100, help="Print progress after scanning this many rows per language.")
     parser.add_argument("--streaming", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--trust-remote-code", action="store_true")
     args = parser.parse_args()
@@ -276,7 +298,7 @@ def main():
         writer = csv.writer(handle, delimiter="|", lineterminator="\n")
         for language in args.languages:
             config_name = choose_config(language, config_names, config_map)
-            print(f"Preparing {language} from config={config_name}")
+            print(f"Preparing {language} from config={config_name}", flush=True)
             summary.append(export_language(args, language, writer, wav_dir, config_name))
 
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
