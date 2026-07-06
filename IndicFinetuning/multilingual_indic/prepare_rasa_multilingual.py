@@ -259,7 +259,16 @@ def main():
     metadata_path = output_dir / "metadata.csv"
     summary_path = output_dir / "summary.json"
 
-    config_names = get_dataset_config_names(args.dataset, token=args.hf_token, trust_remote_code=args.trust_remote_code)
+    try:
+        config_names = get_dataset_config_names(
+            args.dataset,
+            token=args.hf_token,
+            trust_remote_code=args.trust_remote_code,
+        )
+    except TypeError:
+        # Some datasets versions do not accept trust_remote_code here, even
+        # though load_dataset accepts it. Keep the loader path configurable.
+        config_names = get_dataset_config_names(args.dataset, token=args.hf_token)
     config_map = parse_config_map(args.config_map)
     summary = []
 
