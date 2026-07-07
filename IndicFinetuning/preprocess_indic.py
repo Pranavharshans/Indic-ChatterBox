@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 import sys
 
+import numpy as np
+import soundfile as sf
 import torch
 import torchaudio
 from tqdm import tqdm
@@ -37,6 +39,13 @@ def load_rows(config):
 def wav_path_for_row(config, file_id: str) -> Path:
     filename = file_id if file_id.endswith(".wav") else f"{file_id}.wav"
     return Path(config.wav_dir) / filename
+
+
+def load_wav_without_torchcodec(wav_path: Path):
+    audio, sr = sf.read(str(wav_path), always_2d=True, dtype="float32")
+    audio = np.asarray(audio, dtype=np.float32)
+    wav = torch.from_numpy(audio.T)
+    return wav, int(sr)
 
 
 def tokenize_text(config, tts_engine, text: str, language_id: str):
@@ -76,7 +85,7 @@ def preprocess_dataset_indic(config, tts_engine):
                 logger.warning(f"Audio file not found, skipping: {wav_path}")
                 continue
 
-            wav, sr = torchaudio.load(str(wav_path))
+            wav, sr = load_wav_without_torchcodec(wav_path)
             if wav.shape[0] > 1:
                 wav = wav.mean(dim=0, keepdim=True)
             if sr != S3_SR:
