@@ -14,5 +14,4 @@ python IndicFinetuning/multilingual_indic/prepare_rasa_multilingual.py \
   --max-duration 15.0 \
   --streaming \
   --shuffle-buffer 256 \
-  --progress-every 100 \
-  --trust-remote-code
+  --progress-every 100
