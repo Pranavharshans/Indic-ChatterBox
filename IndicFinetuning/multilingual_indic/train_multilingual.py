@@ -265,6 +265,7 @@ def run_training(cfg):
         fp16=False,
         bf16=True,
         save_total_limit=cfg.save_total_limit,
+        save_safetensors=getattr(cfg, "save_safetensors", False),
         gradient_checkpointing=True,
         dataloader_persistent_workers=True,
         dataloader_pin_memory=True,
