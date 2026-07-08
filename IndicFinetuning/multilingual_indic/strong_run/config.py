@@ -34,10 +34,21 @@ class MultilingualIndicConfig(IndicTrainConfig):
     grad_accum: int = 1
     learning_rate: float = 6e-5
     num_epochs: int = 2
-    save_steps: int = 1500
+    save_steps: int = 1000
     logging_steps: int = 50
     save_total_limit: int = 6
     dataloader_num_workers: int = 8
+
+    # At every saved checkpoint, render fixed sanity-check samples into
+    # outputs/multilingual_indic_strong_run/eval_samples/op-<step>/<lang>/.
+    eval_on_save: bool = True
+    eval_sample_steps: int = 1000
+    eval_samples_per_language: int = 4
+    eval_output_dir: str = "./IndicFinetuning/outputs/multilingual_indic_strong_run/eval_samples"
+    eval_temperature: float = 0.8
+    eval_repetition_penalty: float = 1.2
+    eval_prompt_min_duration: float = 5.0
+    eval_prompt_max_duration: float = 10.0
 
     max_text_len: int = 320
     max_speech_len: int = 850
