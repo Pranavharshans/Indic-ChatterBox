@@ -81,9 +81,15 @@ def generate_eval_samples_for_step(engine, cfg, step: int):
 
     manifest = []
     was_training = engine.t3.training
+    t3_device = next(engine.t3.parameters()).device
+    s3gen_device = next(engine.s3gen.parameters()).device
+    ve_device = next(engine.ve.parameters()).device
+    original_engine_device = engine.device
+
     engine.t3.eval()
-    engine.s3gen.eval()
-    engine.ve.eval()
+    engine.s3gen.to(t3_device).eval()
+    engine.ve.to(t3_device).eval()
+    engine.device = str(t3_device)
 
     try:
         with torch.no_grad():
@@ -128,6 +134,9 @@ def generate_eval_samples_for_step(engine, cfg, step: int):
                 (language_dir / "prompts.txt").write_text("\n".join(prompt_lines) + "\n", encoding="utf-8")
     finally:
         engine.t3.train(was_training)
+        engine.s3gen.to(s3gen_device)
+        engine.ve.to(ve_device)
+        engine.device = original_engine_device
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
