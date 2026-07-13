@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from tokenizers import Tokenizer
+from transformers import AutoTokenizer
 
 from src.chatterbox_.models.tokenizers import MTLTokenizer
 from src.chatterbox_.tts import ChatterboxTTS
@@ -28,7 +29,7 @@ def attach_indic_tokenizer(engine, config):
 
 def tokenizer_vocab_size(config) -> int:
     if config.is_turbo:
-        return config.new_vocab_size
+        tokenizer = AutoTokenizer.from_pretrained(config.model_dir, local_files_only=True)
+        return len(tokenizer)
     tokenizer_path = resolve_tokenizer_path(config)
     return len(Tokenizer.from_file(str(tokenizer_path)).get_vocab())
-

@@ -172,14 +172,13 @@ def run_training(cfg):
     logger.info(f"Dataset: {cfg.csv_path}")
 
     mode_check = "chatterbox_turbo" if cfg.is_turbo else "chatterbox"
-    if not check_pretrained_models(mode=mode_check):
+    if not check_pretrained_models(model_dir=cfg.model_dir, mode=mode_check):
         sys.exit(1)
 
-    if not cfg.is_turbo:
-        inferred_vocab_size = tokenizer_vocab_size(cfg)
-        if inferred_vocab_size != cfg.new_vocab_size:
-            logger.warning(f"Configured new_vocab_size={cfg.new_vocab_size}, tokenizer has {inferred_vocab_size}. Using tokenizer size.")
-            cfg.new_vocab_size = inferred_vocab_size
+    inferred_vocab_size = tokenizer_vocab_size(cfg)
+    if inferred_vocab_size != cfg.new_vocab_size:
+        logger.warning(f"Configured new_vocab_size={cfg.new_vocab_size}, tokenizer has {inferred_vocab_size}. Using tokenizer size.")
+        cfg.new_vocab_size = inferred_vocab_size
 
     engine_class = get_engine_class(cfg.is_turbo)
 

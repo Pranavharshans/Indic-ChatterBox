@@ -1,4 +1,5 @@
 import argparse
+import importlib.util
 import os
 from pathlib import Path
 import sys
@@ -20,6 +21,16 @@ from src.utils import setup_logger
 logger = setup_logger("Indic-Checkpoint-Exporter")
 
 
+def load_config(config_file: str, class_name: str):
+    path = Path(config_file).resolve()
+    spec = importlib.util.spec_from_file_location(path.stem, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load config file: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return getattr(module, class_name)()
+
+
 def load_checkpoint_state(checkpoint_dir: Path):
     safetensors_path = checkpoint_dir / "model.safetensors"
     bin_path = checkpoint_dir / "pytorch_model.bin"
@@ -33,11 +44,10 @@ def load_checkpoint_state(checkpoint_dir: Path):
 def build_lora_model(cfg: IndicTrainConfig):
     from peft import LoraConfig, get_peft_model
 
-    if not cfg.is_turbo:
-        inferred_vocab_size = tokenizer_vocab_size(cfg)
-        if inferred_vocab_size != cfg.new_vocab_size:
-            logger.warning(f"Configured new_vocab_size={cfg.new_vocab_size}, tokenizer has {inferred_vocab_size}. Using tokenizer size.")
-            cfg.new_vocab_size = inferred_vocab_size
+    inferred_vocab_size = tokenizer_vocab_size(cfg)
+    if inferred_vocab_size != cfg.new_vocab_size:
+        logger.warning(f"Configured new_vocab_size={cfg.new_vocab_size}, tokenizer has {inferred_vocab_size}. Using tokenizer size.")
+        cfg.new_vocab_size = inferred_vocab_size
 
     engine_class = get_engine_class(cfg.is_turbo)
     base_engine = engine_class.from_local(cfg.model_dir, device="cpu")
@@ -71,9 +81,11 @@ def main():
     parser = argparse.ArgumentParser(description="Export a Trainer checkpoint into a PEFT adapter folder for Indic inference.")
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--output", default="./IndicFinetuning/outputs/indic_adapter_test")
+    parser.add_argument("--config-file", default=None)
+    parser.add_argument("--config-class", default="MultilingualIndicConfig")
     args = parser.parse_args()
 
-    cfg = IndicTrainConfig()
+    cfg = load_config(args.config_file, args.config_class) if args.config_file else IndicTrainConfig()
     checkpoint_dir = Path(args.checkpoint)
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -95,4 +107,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

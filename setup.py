@@ -1,3 +1,4 @@
+import argparse
 import os
 import requests
 import sys
@@ -92,7 +93,7 @@ def is_existing_file_valid(path):
 
 
 
-def merge_and_save_turbo_tokenizer():
+def merge_and_save_turbo_tokenizer(languages=None):
     """
     It combines the downloaded original GPT-2 tokenizer with our custom vocab
     and overwrites the original files.
@@ -100,7 +101,9 @@ def merge_and_save_turbo_tokenizer():
     print("\n--- Turbo Vocab Merging Begins ---")
     
     try:
-        base_tokenizer = AutoTokenizer.from_pretrained("gpt2-medium")
+        # Preserve the exact token IDs used by the official Turbo checkpoint,
+        # then append only the requested language tokens.
+        base_tokenizer = AutoTokenizer.from_pretrained(DEST_DIR, local_files_only=True)
     except Exception as e:
         print(f"ERROR: The original tokenizer could not be loaded. Did you download the files correctly? -> {e}")
         return 0
@@ -110,22 +113,21 @@ def merge_and_save_turbo_tokenizer():
     print(f"   Original Size: {initial_len}")
 
 
-    custom_vocab_path = os.path.join(DEST_DIR, "grapheme_mtl_merged_expanded_v1.json")
-    
-    print(f"Loading: Custom Vocab ({custom_vocab_path})")
-    
-    with open(custom_vocab_path, 'r', encoding='utf-8') as f:
-        custom_data = json.load(f)
+    if languages:
+        from IndicFinetuning.indic_languages import get_graphemes, get_language_tags
 
-
-    if "model" in custom_data and "vocab" in custom_data["model"]:
-        vocab_dict = custom_data["model"]["vocab"]
-        
+        unique_tokens_to_add = get_language_tags(languages) + get_graphemes(languages)
+        print(f"Extending Turbo tokenizer for: {', '.join(languages)}")
     else:
-        print("Warning: The custom VOCAB format may differ from what is expected.")
-        return 0
+        custom_vocab_path = os.path.join(DEST_DIR, "grapheme_mtl_merged_expanded_v1.json")
+        print(f"Loading: Custom Vocab ({custom_vocab_path})")
+        with open(custom_vocab_path, 'r', encoding='utf-8') as f:
+            custom_data = json.load(f)
+        if "model" not in custom_data or "vocab" not in custom_data["model"]:
+            print("Warning: The custom VOCAB format may differ from what is expected.")
+            return 0
+        unique_tokens_to_add = list(custom_data["model"]["vocab"].keys())
 
-    unique_tokens_to_add = list(vocab_dict.keys())
     added_count = base_tokenizer.add_tokens(unique_tokens_to_add)
     final_len = len(base_tokenizer)
 
@@ -171,7 +173,15 @@ def test_merge_tokenizer_process(tokenizer_path):
 
 
 def main():
-    
+    parser = argparse.ArgumentParser(description="Download and prepare Chatterbox model files.")
+    parser.add_argument("--mode", choices=["standard", "turbo"], default=None)
+    parser.add_argument("--dest-dir", default="pretrained_models")
+    parser.add_argument("--languages", nargs="+", default=None, help="Turbo-only language tokenizer expansion.")
+    args = parser.parse_args()
+
+    global DEST_DIR
+    DEST_DIR = args.dest_dir
+
     print("--- Chatterbox Pretrained Model Setup ---\n")
     
     # 1. Create the directory if it doesn't exist
@@ -186,7 +196,9 @@ def main():
 
     cfg = TrainConfig()
 
-    if cfg.is_turbo:
+    is_turbo = cfg.is_turbo if args.mode is None else args.mode == "turbo"
+
+    if is_turbo:
         print(f"Mode: CHATTERBOX-TURBO (Checking {len(CHATTERBOX_TURBO_FILES)} files)")
         FILES_TO_DOWNLOAD = CHATTERBOX_TURBO_FILES
         
@@ -199,22 +211,21 @@ def main():
         dest_path = os.path.join(DEST_DIR, filename)
         download_file(url, dest_path)
 
-    if cfg.is_turbo:
-        new_vocab_size = merge_and_save_turbo_tokenizer()
+    if is_turbo:
+        new_vocab_size = merge_and_save_turbo_tokenizer(args.languages)
         if new_vocab_size > 0:
             
             #test_merge_tokenizer_process(DEST_DIR)
 
             print("\n" + "="*60)
             print("INSTALLATION COMPLETE (CHATTERBOX-TURBO MODE)")
-            print("All models are set up in 'pretrained_models/' folder.")
-            print(f"Please update the 'new_vocab_size' value in the 'src/config.py' file")
-            print(f"to: {new_vocab_size}")
+            print(f"All models are set up in '{DEST_DIR}/' folder.")
+            print(f"Final Turbo tokenizer vocabulary size: {new_vocab_size}")
             print("="*60 + "\n")
 
     else:
         print("\nINSTALLATION COMPLETE (CHATTERBOX-TTS MOD)")
-        print("All models are set up in 'pretrained_models/' folder.")
+        print(f"All models are set up in '{DEST_DIR}/' folder.")
         print(f"Note: 'grapheme_mtl_merged_expanded_v1.json' was saved as 'tokenizer.json' for the new vocabulary.")
 
 

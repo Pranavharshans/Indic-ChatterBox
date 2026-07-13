@@ -134,8 +134,7 @@ def format_text(config, text: str, language_id: str) -> str:
 def load_lora_engine(config, adapter_path: str, device: str):
     from peft import PeftModel
 
-    if not config.is_turbo:
-        config.new_vocab_size = tokenizer_vocab_size(config)
+    config.new_vocab_size = tokenizer_vocab_size(config)
 
     engine_class = get_engine_class(config.is_turbo)
     temp_engine = engine_class.from_local(config.model_dir, device="cpu")
