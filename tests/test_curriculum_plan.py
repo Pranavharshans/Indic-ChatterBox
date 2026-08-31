@@ -7,6 +7,7 @@ from IndicFinetuning.single_language_curriculum.curriculum import (
     CurriculumSample,
     assert_disjoint,
     build_stage_manifests,
+    cumulative_interval_step,
     deduplicate,
     expressive_clean_subset,
     filter_ivr,
@@ -19,6 +20,7 @@ from IndicFinetuning.single_language_curriculum.export_hf_catalogs import (
     metadata_passes_ivr_filters,
     normalized_gender,
 )
+from IndicFinetuning.single_language_curriculum.config import MalayalamCurriculumConfig
 
 
 def sample(source, index, speaker, **overrides):
@@ -42,6 +44,17 @@ def sample(source, index, speaker, **overrides):
 
 
 class CurriculumPlanTests(unittest.TestCase):
+    def test_audio_interval_is_cumulative_across_stage_boundaries(self):
+        self.assertEqual(cumulative_interval_step(250, 1750, 1000), 2000)
+        self.assertIsNone(cumulative_interval_step(249, 1750, 1000))
+
+    def test_default_run_is_one_curriculum_epoch_with_audio_every_1000_steps(self):
+        config = MalayalamCurriculumConfig()
+        self.assertTrue(all(stage.epochs == 1.0 for stage in config.stages))
+        self.assertEqual(config.audio_sample_steps, 1000)
+        self.assertTrue(config.audio_samples_on_steps)
+        self.assertEqual((config.batch_size, config.grad_accum), (8, 2))
+
     def test_hf_metadata_normalization_and_filtering(self):
         class Args:
             ivr_min_duration = 2.0

@@ -201,6 +201,11 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Local model, curriculum data, and training outputs
+pretrained_models/
+IndicFinetuning/single_language_curriculum/work/
+IndicFinetuning/outputs/malayalam_curriculum_1epoch/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

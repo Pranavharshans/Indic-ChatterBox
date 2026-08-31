@@ -107,7 +107,7 @@ def metadata_passes_ivr_filters(row: dict, schema: dict, args) -> bool:
 
 def load_source(args, source: str):
     from datasets import Audio, load_dataset
-    from huggingface_hub import HfApi
+    from huggingface_hub import HfApi, get_token
 
     if source == "rasa":
         dataset_id = args.rasa_dataset
@@ -117,7 +117,12 @@ def load_source(args, source: str):
         dataset_id = args.ivr_dataset
         config = args.ivr_config
         revision = args.ivr_revision
-    resolved_revision = HfApi(token=args.hf_token).dataset_info(
+    resolved_token = args.hf_token or get_token()
+    if source == "rasa" and not resolved_token:
+        raise RuntimeError(
+            "Rasa is gated. Accept its Hub terms and run `hf auth login` before exporting."
+        )
+    resolved_revision = HfApi(token=resolved_token).dataset_info(
         dataset_id,
         revision=revision,
     ).sha
@@ -126,8 +131,8 @@ def load_source(args, source: str):
         "streaming": True,
         "revision": resolved_revision,
     }
-    if args.hf_token:
-        kwargs["token"] = args.hf_token
+    if resolved_token:
+        kwargs["token"] = resolved_token
     dataset = load_dataset(dataset_id, config, **kwargs)
     schema = source_schema(dataset, source)
     dataset = dataset.cast_column(schema["audio"], Audio(decode=False))

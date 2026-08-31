@@ -5,19 +5,24 @@ import importlib.util
 import inspect
 import json
 import os
+import random
 import sys
 from pathlib import Path
 
+import numpy as np
+import soundfile as sf
 import torch
-from transformers import Trainer, TrainingArguments
+from transformers import Trainer, TrainerCallback, TrainingArguments
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from IndicFinetuning.indic_engine import attach_indic_tokenizer, get_engine_class, tokenizer_vocab_size
+from IndicFinetuning.indic_text import apply_language_tag, normalize_indic_text
+from IndicFinetuning.multilingual_indic.generate_eval_samples import PROMPTS
 from IndicFinetuning.preprocess_indic import preprocess_rows_indic
-from IndicFinetuning.single_language_curriculum.curriculum import read_jsonl
+from IndicFinetuning.single_language_curriculum.curriculum import cumulative_interval_step, read_jsonl
 from src.chatterbox_.models.t3.t3 import T3
 from src.dataset import CurriculumManifestDataset, data_collator_standart, data_collator_turbo
 from src.model import ChatterboxTrainerWrapper, resize_and_load_t3_weights
@@ -117,7 +122,7 @@ def training_arguments(cfg, stage):
         per_device_eval_batch_size=cfg.batch_size,
         gradient_accumulation_steps=cfg.grad_accum,
         learning_rate=stage.learning_rate,
-        max_steps=stage.max_steps,
+        num_train_epochs=stage.epochs,
         lr_scheduler_type="constant",
         save_strategy="steps",
         save_steps=cfg.save_steps,
@@ -138,6 +143,145 @@ def training_arguments(cfg, stage):
     parameter_names = inspect.signature(TrainingArguments.__init__).parameters
     kwargs["eval_strategy" if "eval_strategy" in parameter_names else "evaluation_strategy"] = "steps"
     return TrainingArguments(**kwargs)
+
+
+def set_generation_seed(seed: int):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def capture_rng_state():
+    return {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch": torch.get_rng_state(),
+        "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+    }
+
+
+def restore_rng_state(state):
+    random.setstate(state["python"])
+    np.random.set_state(state["numpy"])
+    torch.set_rng_state(state["torch"])
+    if state["cuda"] is not None:
+        torch.cuda.set_rng_state_all(state["cuda"])
+
+
+def find_eval_prompt(cfg) -> str:
+    rows = read_jsonl(cfg.eval_prompt_manifest)
+    candidates = [row for row in rows if Path(row.audio_path).exists()]
+    if not candidates:
+        raise FileNotFoundError(
+            f"No existing reference WAV was found in {cfg.eval_prompt_manifest}"
+        )
+    preferred = [row for row in candidates if 5.0 <= row.duration <= 10.0]
+    return (preferred or candidates)[0].audio_path
+
+
+def generate_audio_samples(engine, cfg, cumulative_step: int, stage_name: str, prompt_wav: str):
+    output_dir = Path(cfg.audio_sample_output_dir) / f"step-{cumulative_step:06d}"
+    manifest_path = output_dir / "manifest.json"
+    if manifest_path.exists():
+        return
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    was_training = engine.t3.training
+    t3_device = next(engine.t3.parameters()).device
+    s3gen_device = next(engine.s3gen.parameters()).device
+    ve_device = next(engine.ve.parameters()).device
+    original_engine_device = engine.device
+    rng_state = capture_rng_state()
+    records = []
+
+    engine.t3.eval()
+    engine.s3gen.to(t3_device).eval()
+    engine.ve.to(t3_device).eval()
+    engine.device = str(t3_device)
+    try:
+        prompts = PROMPTS["ml"][: cfg.audio_samples_per_checkpoint]
+        set_generation_seed(cfg.audio_sample_seed)
+        with torch.no_grad():
+            for index, text in enumerate(prompts, start=1):
+                formatted_text = apply_language_tag(
+                    normalize_indic_text(text, cfg.normalize_unicode),
+                    "ml",
+                    cfg.add_language_tag,
+                )
+                wav = engine.generate(
+                    text=formatted_text,
+                    audio_prompt_path=prompt_wav,
+                    temperature=cfg.audio_sample_temperature,
+                    repetition_penalty=cfg.audio_sample_repetition_penalty,
+                )
+                if isinstance(wav, tuple):
+                    wav = wav[0]
+                output_path = output_dir / f"ml_{index:02d}.wav"
+                sf.write(output_path, wav.squeeze().detach().cpu().numpy(), engine.sr)
+                records.append(
+                    {
+                        "cumulative_step": cumulative_step,
+                        "stage": stage_name,
+                        "text": text,
+                        "prompt_wav": prompt_wav,
+                        "audio": str(output_path),
+                        "seed": cfg.audio_sample_seed,
+                    }
+                )
+    finally:
+        if hasattr(engine, "conds"):
+            engine.conds = None
+        engine.t3.train(was_training)
+        engine.s3gen.to(s3gen_device)
+        engine.ve.to(ve_device)
+        engine.device = original_engine_device
+        restore_rng_state(rng_state)
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    manifest_path.write_text(
+        json.dumps(records, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    logger.info(f"Generated cumulative-step audio samples: {output_dir}")
+
+
+class AudioSamplesCallback(TrainerCallback):
+    def __init__(self, engine, cfg, stage_name: str, step_offset: int, prompt_wav: str):
+        self.engine = engine
+        self.cfg = cfg
+        self.stage_name = stage_name
+        self.step_offset = step_offset
+        self.prompt_wav = prompt_wav
+        self.completed_steps = set()
+
+    def on_step_end(self, args, state, control, **kwargs):
+        if not self.cfg.audio_samples_on_steps:
+            return control
+        cumulative_step = cumulative_interval_step(
+            state.global_step,
+            self.step_offset,
+            self.cfg.audio_sample_steps,
+        )
+        if (
+            cumulative_step is None
+            or cumulative_step in self.completed_steps
+        ):
+            return control
+        self.completed_steps.add(cumulative_step)
+        try:
+            generate_audio_samples(
+                self.engine,
+                self.cfg,
+                cumulative_step,
+                self.stage_name,
+                self.prompt_wav,
+            )
+        except Exception as exc:
+            logger.exception(f"Audio generation failed at cumulative step {cumulative_step}: {exc}")
+        return control
 
 
 def save_stage_adapter(engine, output_dir: Path):
@@ -185,10 +329,12 @@ def run_training(cfg):
     )
     optimizer_state = None
     journal = []
+    cumulative_step = 0
+    prompt_wav = find_eval_prompt(cfg)
 
     for stage in cfg.stages:
         logger.info(
-            f"Starting {stage.name}: steps={stage.max_steps}, lr={stage.learning_rate}, manifest={stage.manifest}"
+            f"Starting {stage.name}: epochs={stage.epochs}, lr={stage.learning_rate}, manifest={stage.manifest}"
         )
         train_dataset = CurriculumManifestDataset(cfg, stage.manifest)
         args = training_arguments(cfg, stage)
@@ -198,6 +344,15 @@ def run_training(cfg):
             train_dataset=train_dataset,
             eval_dataset=validation,
             data_collator=collator,
+            callbacks=[
+                AudioSamplesCallback(
+                    engine,
+                    cfg,
+                    stage.name,
+                    cumulative_step,
+                    prompt_wav,
+                )
+            ],
         )
         trainer.create_optimizer()
         if optimizer_state is not None:
@@ -205,19 +360,33 @@ def run_training(cfg):
         for parameter_group in trainer.optimizer.param_groups:
             parameter_group["lr"] = stage.learning_rate
             parameter_group["initial_lr"] = stage.learning_rate
-        trainer.create_scheduler(num_training_steps=stage.max_steps, optimizer=trainer.optimizer)
         result = trainer.train()
         optimizer_state = tensors_to_cpu(trainer.optimizer.state_dict())
+        stage_steps = int(trainer.state.global_step)
+        cumulative_step += stage_steps
 
         stage_dir = Path(args.output_dir)
         adapter_dir = save_stage_adapter(engine, stage_dir)
         torch.save(optimizer_state, stage_dir / "optimizer_stage_end.pt")
         stage_metrics = result.metrics
+        if cfg.audio_samples_on_stage_end:
+            try:
+                generate_audio_samples(
+                    engine,
+                    cfg,
+                    cumulative_step,
+                    stage.name,
+                    prompt_wav,
+                )
+            except Exception as exc:
+                logger.exception(f"Stage-end audio generation failed for {stage.name}: {exc}")
         journal.append(
             {
                 "stage": stage.name,
                 "manifest": stage.manifest,
-                "max_steps": stage.max_steps,
+                "epochs": stage.epochs,
+                "optimizer_steps": stage_steps,
+                "cumulative_optimizer_step": cumulative_step,
                 "learning_rate": stage.learning_rate,
                 "adapter": str(adapter_dir),
                 "metrics": stage_metrics,

@@ -59,6 +59,13 @@ def stable_seed(seed: int, *parts: str) -> int:
     return int.from_bytes(hashlib.sha256(payload).digest()[:8], "big")
 
 
+def cumulative_interval_step(local_step: int, step_offset: int, interval: int) -> int | None:
+    if interval <= 0:
+        raise ValueError("interval must be positive")
+    cumulative_step = int(local_step) + int(step_offset)
+    return cumulative_step if cumulative_step > 0 and cumulative_step % interval == 0 else None
+
+
 def read_jsonl(path: str | Path) -> list[CurriculumSample]:
     rows = []
     with Path(path).open("r", encoding="utf-8") as handle:

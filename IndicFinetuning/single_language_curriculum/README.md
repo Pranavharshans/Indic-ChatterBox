@@ -2,23 +2,22 @@
 
 This run trains one continuous Chatterbox LoRA adapter across three fixed stages:
 
-| Stage | Pilot steps | Dataset manifest | Learning rate |
+| Stage | Passes | Dataset manifest | Learning rate |
 | --- | ---: | --- | ---: |
-| 1 | 6,000 | 100% filtered Malayalam IV-R | `6e-5` |
-| 2 | 6,000 | 50% Rasa / 50% IV-R | `3e-5` |
-| 3 | 3,000 | 80% Rasa / 20% expressive-clean IV-R | `1e-5` |
+| 1 | 1 | 100% filtered Malayalam IV-R | `6e-5` |
+| 2 | 1 | 50% Rasa / 50% IV-R | `3e-5` |
+| 3 | 1 | 80% Rasa / 20% expressive-clean IV-R | `1e-5` |
 
-The model stays in one Python process. Model weights and Adam optimizer moments continue between stages; only the fixed manifest and learning rate change. There is no speaker-balanced runtime sampler.
+Together these three single passes are one curriculum epoch: every fixed stage manifest is traversed exactly once. The model stays in one Python process. Model weights and Adam optimizer moments continue between stages; only the fixed manifest and learning rate change. There is no speaker-balanced runtime sampler.
 
 ## Data contract
 
 Export both Hugging Face datasets to local WAV files and UTF-8 JSONL catalogs:
 
 ```bash
-export HF_TOKEN="your_hugging_face_token"
+hf auth login
 python IndicFinetuning/single_language_curriculum/export_hf_catalogs.py \
   --output /data/malayalam/curriculum \
-  --hf-token "$HF_TOKEN" \
   --resume
 ```
 
@@ -63,6 +62,95 @@ Build the existing Malayalam tokenizer and base model files first, then run:
 bash IndicFinetuning/single_language_curriculum/train.sh
 ```
 
-Preprocessing is source-aware and writes each encoded sample once under `work/preprocessed/<source>/`. Each stage writes its own checkpoints, adapter, optimizer boundary state, and metrics under `IndicFinetuning/outputs/malayalam_curriculum_pilot/`. The final adapter is `final_adapter/`.
+Preprocessing is source-aware and writes each encoded sample once under `work/preprocessed/<source>/`. Each stage writes its own checkpoints, adapter, optimizer boundary state, and metrics under `IndicFinetuning/outputs/malayalam_curriculum_1epoch/`. The final adapter is `final_adapter/`.
 
-Do not select the final model from loss alone. Compare fixed Malayalam prompts and unseen reference speakers at the base model and every stage boundary before expanding beyond the 15k-step pilot.
+Two fixed Malayalam WAVs are generated at every 1,000 cumulative optimizer steps and at each stage boundary under `audio_samples/step-XXXXXX/`. They use the same held-out Rasa reference recording, texts, seed, temperature, and repetition penalty for direct listening comparisons.
+
+Do not select the final model from loss alone. Listen to the fixed samples and compare unseen reference speakers before deciding whether to run additional epochs.
+
+## RTX 5090 VM quickstart
+
+The exact training datasets are:
+
+- `ai4bharat/Rasa`, subset `Malayalam`, split `train` (gated);
+- `trysem/indicvoices_r-ML`, subset `default`, split `train`.
+
+Clone only this branch and prepare a Python 3.11 environment:
+
+```bash
+cd /workspace
+git clone --branch feat/malayalam-curriculum-training --single-branch \
+  https://github.com/Pranavharshans/Indic-ChatterBox.git
+cd Indic-ChatterBox
+
+sudo apt-get update
+sudo apt-get install -y ffmpeg git git-lfs jq python3-venv tmux
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip wheel setuptools
+python -m pip install torch==2.10.0 torchvision==0.25.0 torchaudio==2.10.0 \
+  --index-url https://download.pytorch.org/whl/cu128
+python -m pip install -r requirements-rtx5090.txt
+python -m pip install --upgrade huggingface_hub
+```
+
+Verify the 5090 before downloading data:
+
+```bash
+python -c 'import torch; print(torch.__version__, torch.version.cuda); print(torch.cuda.get_device_name(0), torch.cuda.get_device_capability(0)); assert torch.cuda.is_available()'
+```
+
+Accept the Rasa conditions at <https://huggingface.co/datasets/ai4bharat/Rasa>, then authenticate without putting the token in shell history:
+
+```bash
+hf auth login
+hf auth whoami
+```
+
+Download/export and build the deterministic plan:
+
+```bash
+export HF_HOME=/workspace/hf-cache
+mkdir -p /workspace/data/malayalam-curriculum
+
+python IndicFinetuning/single_language_curriculum/export_hf_catalogs.py \
+  --output /workspace/data/malayalam-curriculum \
+  --resume
+
+python IndicFinetuning/single_language_curriculum/build_plan.py \
+  --rasa-catalog /workspace/data/malayalam-curriculum/rasa/catalog.jsonl \
+  --ivr-catalog /workspace/data/malayalam-curriculum/ivr/catalog.jsonl \
+  --output ./IndicFinetuning/single_language_curriculum/work/plan \
+  --seed 42
+
+jq . IndicFinetuning/single_language_curriculum/work/plan/summary.json
+```
+
+Download the standard Chatterbox model and build the Malayalam tokenizer:
+
+```bash
+python setup.py --mode standard
+python IndicFinetuning/tokenizer/build_indic_tokenizer.py \
+  --base-tokenizer ./pretrained_models/tokenizer.json \
+  --output-tokenizer ./IndicFinetuning/tokenizer/tokenizer_indic.json \
+  --languages ml
+```
+
+Start the one-curriculum-epoch run in `tmux`:
+
+```bash
+tmux new -s ml-curriculum
+source .venv/bin/activate
+export HF_HOME=/workspace/hf-cache
+export CUDA_VISIBLE_DEVICES=0
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+bash IndicFinetuning/single_language_curriculum/train.sh 2>&1 | tee malayalam_curriculum_1epoch.log
+```
+
+Detach with `Ctrl-b`, then `d`. Reattach and inspect generated samples with:
+
+```bash
+tmux attach -t ml-curriculum
+find IndicFinetuning/outputs/malayalam_curriculum_1epoch/audio_samples \
+  -type f -name '*.wav' | sort
+```
