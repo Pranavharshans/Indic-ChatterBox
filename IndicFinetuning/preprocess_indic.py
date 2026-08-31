@@ -37,6 +37,11 @@ def load_rows(config):
 
 
 def wav_path_for_row(config, file_id: str) -> Path:
+    if isinstance(file_id, dict):
+        row = file_id
+        if row.get("audio_path"):
+            return Path(row["audio_path"])
+        file_id = row["id"]
     filename = file_id if file_id.endswith(".wav") else f"{file_id}.wav"
     return Path(config.wav_dir) / filename
 
@@ -64,9 +69,9 @@ def tokenize_text(config, tts_engine, text: str, language_id: str):
     ).squeeze(0).cpu()
 
 
-def preprocess_dataset_indic(config, tts_engine):
-    rows = load_rows(config)
-    os.makedirs(config.preprocessed_dir, exist_ok=True)
+def preprocess_rows_indic(config, tts_engine, rows, output_dir=None, skip_existing=False):
+    output_dir = Path(output_dir or config.preprocessed_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tts_engine.ve.to(device).eval()
@@ -79,8 +84,15 @@ def preprocess_dataset_indic(config, tts_engine):
     for row in tqdm(rows, desc="Indic preprocessing"):
         file_id = row["id"]
         language_id = row["language_id"]
+        source = str(row.get("source", "")).strip()
+        save_dir = output_dir / source if source else output_dir
+        save_dir.mkdir(parents=True, exist_ok=True)
+        save_path = save_dir / f"{Path(file_id).stem}.pt"
+        if skip_existing and save_path.exists():
+            success_count += 1
+            continue
         try:
-            wav_path = wav_path_for_row(config, file_id)
+            wav_path = wav_path_for_row(config, row)
             if not wav_path.exists():
                 logger.warning(f"Audio file not found, skipping: {wav_path}")
                 continue
@@ -112,7 +124,6 @@ def preprocess_dataset_indic(config, tts_engine):
                 prompt_tokens = p_tokens.squeeze().cpu()
 
             text_tokens = tokenize_text(config, tts_engine, row["text"], language_id)
-            save_path = Path(config.preprocessed_dir) / f"{Path(file_id).stem}.pt"
             torch.save(
                 {
                     "speech_tokens": speech_tokens,
@@ -120,6 +131,8 @@ def preprocess_dataset_indic(config, tts_engine):
                     "prompt_tokens": prompt_tokens,
                     "text_tokens": text_tokens,
                     "language_id": language_id,
+                    "source": source,
+                    "speaker_id": str(row.get("speaker_id", "")),
                 },
                 save_path,
             )
@@ -128,6 +141,12 @@ def preprocess_dataset_indic(config, tts_engine):
             logger.error(f"Error preprocessing {file_id}: {exc}")
 
     logger.info(f"Indic preprocessing completed. Success: {success_count}/{len(rows)}")
+    return success_count
+
+
+def preprocess_dataset_indic(config, tts_engine):
+    rows = load_rows(config)
+    return preprocess_rows_indic(config, tts_engine, rows)
 
 
 if __name__ == "__main__":

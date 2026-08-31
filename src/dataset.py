@@ -1,5 +1,7 @@
 import os
 import random
+import json
+from pathlib import Path
 import torch
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
@@ -75,6 +77,72 @@ class ChatterboxDataset(Dataset):
 
         except Exception as e:
             logger.error(f"Error loading {filename}: {e}")
+            return None
+
+
+class CurriculumManifestDataset(Dataset):
+    """Load preprocessed samples through a fixed source-aware JSONL manifest."""
+
+    def __init__(self, config, manifest_path, conditioning_dropout=True):
+        self.cfg = config
+        self.preprocessed_dir = Path(config.preprocessed_dir)
+        self.rows = []
+        self.conditioning_dropout = conditioning_dropout
+        with Path(manifest_path).open("r", encoding="utf-8") as handle:
+            for line_number, line in enumerate(handle, start=1):
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                if not row.get("id") or not row.get("source"):
+                    raise ValueError(f"Missing id/source in {manifest_path}:{line_number}")
+                self.rows.append(row)
+        if not self.rows:
+            raise RuntimeError(f"Curriculum manifest is empty: {manifest_path}")
+        missing = []
+        for row in self.rows:
+            sample_path = self.preprocessed_dir / row["source"] / f"{Path(row['id']).stem}.pt"
+            if not sample_path.exists():
+                missing.append(str(sample_path))
+                if len(missing) == 5:
+                    break
+        if missing:
+            raise FileNotFoundError(
+                f"Preprocessed curriculum samples are missing for {manifest_path}: {missing}"
+            )
+        self.sot_token = config.start_text_token
+        self.eot_token = config.stop_text_token
+        logger.info(f"Curriculum manifest loaded: {manifest_path} ({len(self.rows)} samples)")
+
+    def __len__(self):
+        return len(self.rows)
+
+    def __getitem__(self, idx):
+        row = self.rows[idx]
+        pt_path = self.preprocessed_dir / row["source"] / f"{Path(row['id']).stem}.pt"
+        try:
+            data = torch.load(pt_path)
+            text_tokens = data["text_tokens"][: self.cfg.max_text_len - 2]
+            text_tokens = torch.cat(
+                [
+                    torch.tensor([self.sot_token], dtype=torch.long),
+                    text_tokens,
+                    torch.tensor([self.eot_token], dtype=torch.long),
+                ]
+            )
+            speech_tokens = data["speech_tokens"][: self.cfg.max_speech_len]
+            speaker_emb = data["speaker_emb"]
+            prompt_tokens = data["prompt_tokens"]
+            if self.conditioning_dropout and random.random() < 0.20:
+                speaker_emb = torch.zeros_like(speaker_emb)
+                prompt_tokens = torch.zeros(1, dtype=torch.long)
+            return {
+                "text_tokens": text_tokens,
+                "speech_tokens": speech_tokens,
+                "speaker_emb": speaker_emb,
+                "prompt_tokens": prompt_tokens,
+            }
+        except Exception as exc:
+            logger.error(f"Error loading curriculum sample {pt_path}: {exc}")
             return None
 
 
