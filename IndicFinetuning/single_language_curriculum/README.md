@@ -15,13 +15,17 @@ Together these three single passes are one curriculum epoch: every fixed stage m
 Export both Hugging Face datasets to local WAV files and UTF-8 JSONL catalogs:
 
 ```bash
+export HF_HOME=/data/hf-cache
+mkdir -p "$HF_HOME"
 hf auth login
+hf auth whoami
+python -c 'from huggingface_hub import get_token; assert get_token(), "Token unavailable"; print("Python can access the HF token")'
 python IndicFinetuning/single_language_curriculum/export_hf_catalogs.py \
   --output /data/malayalam/curriculum \
   --resume
 ```
 
-Rasa is gated, so accept its terms on the Hub first. The exporter uses streaming metadata, filters IV-R before decoding rejected audio, records dataset/config/revision information, and can resume from its append-only catalogs. Each catalog has one row per recording:
+Rasa is gated, so accept its terms on the Hub first. Set `HF_HOME` before logging in: changing it after `hf auth login` makes the exporter look for the token in a different cache directory. The exporter uses streaming metadata, filters IV-R before decoding rejected audio, records dataset/config/revision information, and can resume from its append-only catalogs. Each catalog has one row per recording:
 
 Plan for substantial local storage: the source WAVs, preprocessed tensors, checkpoints, and temporary Hub cache can require well over 100 GB together.
 
@@ -103,14 +107,16 @@ python -c 'import torch; print(torch.__version__, torch.version.cuda); print(tor
 Accept the Rasa conditions at <https://huggingface.co/datasets/ai4bharat/Rasa>, then authenticate without putting the token in shell history:
 
 ```bash
-hf auth login
+export HF_HOME=/workspace/hf-cache
+mkdir -p "$HF_HOME"
+hf auth login --force
 hf auth whoami
+python -c 'from huggingface_hub import get_token; assert get_token(), "Token unavailable"; print("Python can access the HF token")'
 ```
 
 Download/export and build the deterministic plan:
 
 ```bash
-export HF_HOME=/workspace/hf-cache
 mkdir -p /workspace/data/malayalam-curriculum
 
 python IndicFinetuning/single_language_curriculum/export_hf_catalogs.py \
